@@ -8,7 +8,6 @@ import { AuthProvider } from './hooks/useAuth';
 function App() {
   const [currentView, setCurrentView] = useState('landing'); // 'landing', 'demo-access', 'app'
   const [activeTab, setActiveTab] = useState('budget');
-  const [userInfo, setUserInfo] = useState(null);
 
   const handleAccessApp = () => {
     setCurrentView('demo-access');
@@ -20,7 +19,6 @@ function App() {
 
   const handleBackToLanding = () => {
     setCurrentView('landing');
-    setUserInfo(null);
   };
 
   if (currentView === 'landing') {

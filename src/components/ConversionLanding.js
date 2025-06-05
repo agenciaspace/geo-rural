@@ -8,6 +8,27 @@ import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { auth, db } from '../config/supabase';
 
+const testimonials = [
+  {
+    name: "João Silva",
+    role: "Eng. Agrimensor",
+    text: "Automatizei 90% do meu trabalho. De 8 horas para 45 minutos por projeto!",
+    result: "Aumentou faturamento em 300%"
+  },
+  {
+    name: "Maria Santos", 
+    role: "Topógrafa",
+    text: "Antes demorava 2 dias para fazer uma proposta. Agora faço em 10 minutos.",
+    result: "Fechou 5x mais contratos"
+  },
+  {
+    name: "Carlos Oliveira",
+    role: "Geógrafo",
+    text: "O desenho automático é incrível. Meus clientes ficam impressionados.",
+    result: "Cobrou 40% mais caro"
+  }
+];
+
 const ConversionLanding = ({ onAccessApp }) => {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -99,26 +120,6 @@ const ConversionLanding = ({ onAccessApp }) => {
     }
   };
 
-  const testimonials = [
-    {
-      name: "João Silva",
-      role: "Eng. Agrimensor",
-      text: "Automatizei 90% do meu trabalho. De 8 horas para 45 minutos por projeto!",
-      result: "Aumentou faturamento em 300%"
-    },
-    {
-      name: "Maria Santos", 
-      role: "Topógrafa",
-      text: "Antes demorava 2 dias para fazer uma proposta. Agora faço em 10 minutos.",
-      result: "Fechou 5x mais contratos"
-    },
-    {
-      name: "Carlos Oliveira",
-      role: "Geógrafo",
-      text: "O desenho automático é incrível. Meus clientes ficam impressionados.",
-      result: "Cobrou 40% mais caro"
-    }
-  ];
 
   const benefits = [
     "Desenhos automáticos com IA em 5 minutos",
