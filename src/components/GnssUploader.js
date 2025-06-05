@@ -13,7 +13,7 @@ const GnssUploader = () => {
   const handleFileSelect = (selectedFile) => {
     const allowedTypes = ['.21o', '.rnx', '.zip'];
     const fileExtension = selectedFile.name.toLowerCase().slice(selectedFile.name.lastIndexOf('.'));
-    const maxSizeBytes = 25 * 1024 * 1024; // 25MB limite (limitado pelo servidor)
+    const maxSizeBytes = 100 * 1024 * 1024; // 100MB limite
     
     console.log('Arquivo selecionado:', {
       nome: selectedFile.name,
@@ -31,7 +31,7 @@ const GnssUploader = () => {
     }
     
     if (selectedFile.size > maxSizeBytes) {
-      setError(`[VALIDAÇÃO LOCAL] Arquivo muito grande. Tamanho máximo permitido: 25MB. Seu arquivo: ${(selectedFile.size / 1024 / 1024).toFixed(2)}MB`);
+      setError(`[VALIDAÇÃO LOCAL] Arquivo muito grande. Tamanho máximo permitido: 100MB. Seu arquivo: ${(selectedFile.size / 1024 / 1024).toFixed(2)}MB`);
       setFile(null);
       return;
     }
@@ -133,7 +133,7 @@ const GnssUploader = () => {
       let errorMessage = 'Erro ao processar arquivo';
       
       if (err.response?.status === 413) {
-        errorMessage = `[ERRO SERVIDOR] Arquivo muito grande para upload. Tamanho máximo permitido pelo servidor: 25MB. Seu arquivo: ${(file.size / 1024 / 1024).toFixed(2)}MB. Tente compactar o arquivo.`;
+        errorMessage = `[ERRO SERVIDOR] Arquivo muito grande para upload. Tamanho máximo permitido pelo servidor: 100MB. Seu arquivo: ${(file.size / 1024 / 1024).toFixed(2)}MB. Tente compactar o arquivo.`;
       } else if (err.response?.status === 422) {
         errorMessage = 'Formato de arquivo inválido. Verifique se é um arquivo RINEX válido.';
       } else if (err.response?.status === 500) {
@@ -174,7 +174,7 @@ const GnssUploader = () => {
             <h3>Clique ou arraste um arquivo aqui</h3>
             <p>Arquivos suportados: .21O, .RNX, .ZIP</p>
             <p style={{ fontSize: '0.9rem', color: '#666' }}>
-              Tamanho máximo: 25MB
+              Tamanho máximo: 100MB
             </p>
           </div>
           <input

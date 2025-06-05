@@ -4,6 +4,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+from starlette.middleware.base import BaseHTTPMiddleware
 import georinex as gr
 import numpy as np
 import os
@@ -15,7 +16,30 @@ import logging
 from budget_calculator import BudgetCalculator, BudgetRequest
 from pdf_generator import PDFGenerator
 
-app = FastAPI(title="GeoRural Pro API", version="1.0.0")
+# Configurar limite de upload para 100MB
+app = FastAPI(
+    title="GeoRural Pro API", 
+    version="1.0.0"
+)
+
+# Aumentar limite de upload para 100MB
+class UploadSizeMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app, max_upload_size: int = 100 * 1024 * 1024):  # 100MB
+        super().__init__(app)
+        self.max_upload_size = max_upload_size
+        
+    async def dispatch(self, request: Request, call_next):
+        if request.headers.get("content-length"):
+            content_length = int(request.headers["content-length"])
+            if content_length > self.max_upload_size:
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"Arquivo muito grande. Tamanho máximo: {self.max_upload_size // (1024*1024)}MB"
+                )
+        response = await call_next(request)
+        return response
+
+app.add_middleware(UploadSizeMiddleware)
 
 # Configurar diretórios
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend", "build", "static")
@@ -266,6 +290,20 @@ GeoRural Pro - Análise Automatizada
 @app.post("/api/upload-gnss")
 async def upload_gnss_file(file: UploadFile = File(...)):
     """Endpoint para upload e análise de arquivos GNSS"""
+    
+    # Verificar tamanho do arquivo (100MB limite)
+    MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
+    file_content = await file.read()
+    file_size = len(file_content)
+    
+    if file_size > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Arquivo muito grande. Tamanho máximo: {MAX_FILE_SIZE // (1024*1024)}MB. Seu arquivo: {file_size // (1024*1024)}MB"
+        )
+    
+    # Reset file pointer
+    await file.seek(0)
     
     # Verifica extensão do arquivo
     allowed_extensions = ['.21o', '.rnx', '.zip']
