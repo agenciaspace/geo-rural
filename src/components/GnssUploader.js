@@ -13,7 +13,16 @@ const GnssUploader = () => {
   const handleFileSelect = (selectedFile) => {
     const allowedTypes = ['.21o', '.rnx', '.zip'];
     const fileExtension = selectedFile.name.toLowerCase().slice(selectedFile.name.lastIndexOf('.'));
-    const maxSizeBytes = 50 * 1024 * 1024; // 50MB limite
+    const maxSizeBytes = 25 * 1024 * 1024; // 25MB limite (limitado pelo servidor)
+    
+    console.log('Arquivo selecionado:', {
+      nome: selectedFile.name,
+      tamanho: selectedFile.size,
+      tamanhoMB: (selectedFile.size / 1024 / 1024).toFixed(2),
+      extensao: fileExtension,
+      limite: maxSizeBytes,
+      limiteMB: (maxSizeBytes / 1024 / 1024)
+    });
     
     if (!allowedTypes.includes(fileExtension)) {
       setError('Tipo de arquivo não suportado. Use arquivos .21O, .RNX ou .ZIP');
@@ -22,7 +31,7 @@ const GnssUploader = () => {
     }
     
     if (selectedFile.size > maxSizeBytes) {
-      setError(`Arquivo muito grande. Tamanho máximo permitido: 50MB. Seu arquivo: ${(selectedFile.size / 1024 / 1024).toFixed(2)}MB`);
+      setError(`[VALIDAÇÃO LOCAL] Arquivo muito grande. Tamanho máximo permitido: 25MB. Seu arquivo: ${(selectedFile.size / 1024 / 1024).toFixed(2)}MB`);
       setFile(null);
       return;
     }
@@ -69,14 +78,21 @@ const GnssUploader = () => {
     setResult(null);
 
     try {
+      console.log('Iniciando upload do arquivo:', file.name, (file.size / 1024 / 1024).toFixed(2) + 'MB');
+      
       // 1. Fazer upload do arquivo para o Supabase Storage
+      console.log('Fazendo upload para Supabase Storage...');
       const uploadResult = await storage.uploadGnssFile(file);
       
       if (uploadResult.error) {
-        throw new Error('Erro no upload: ' + uploadResult.error.message);
+        console.error('Erro no Supabase Storage:', uploadResult.error);
+        throw new Error('Erro no upload para storage: ' + uploadResult.error.message);
       }
+      
+      console.log('Upload para Supabase concluído com sucesso');
 
       // 2. Enviar para análise via API
+      console.log('Enviando para análise via API...');
       const formData = new FormData();
       formData.append('file', file);
 
@@ -117,7 +133,7 @@ const GnssUploader = () => {
       let errorMessage = 'Erro ao processar arquivo';
       
       if (err.response?.status === 413) {
-        errorMessage = `Arquivo muito grande para upload. Tamanho máximo permitido: 50MB. Tente compactar o arquivo ou use um arquivo menor.`;
+        errorMessage = `[ERRO SERVIDOR] Arquivo muito grande para upload. Tamanho máximo permitido pelo servidor: 25MB. Seu arquivo: ${(file.size / 1024 / 1024).toFixed(2)}MB. Tente compactar o arquivo.`;
       } else if (err.response?.status === 422) {
         errorMessage = 'Formato de arquivo inválido. Verifique se é um arquivo RINEX válido.';
       } else if (err.response?.status === 500) {
@@ -158,7 +174,7 @@ const GnssUploader = () => {
             <h3>Clique ou arraste um arquivo aqui</h3>
             <p>Arquivos suportados: .21O, .RNX, .ZIP</p>
             <p style={{ fontSize: '0.9rem', color: '#666' }}>
-              Tamanho máximo: 50MB
+              Tamanho máximo: 25MB
             </p>
           </div>
           <input
