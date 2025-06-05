@@ -80,18 +80,7 @@ const GnssUploader = () => {
     try {
       console.log('Iniciando upload do arquivo:', file.name, (file.size / 1024 / 1024).toFixed(2) + 'MB');
       
-      // 1. Fazer upload do arquivo para o Supabase Storage
-      console.log('Fazendo upload para Supabase Storage...');
-      const uploadResult = await storage.uploadGnssFile(file);
-      
-      if (uploadResult.error) {
-        console.error('Erro no Supabase Storage:', uploadResult.error);
-        throw new Error('Erro no upload para storage: ' + uploadResult.error.message);
-      }
-      
-      console.log('Upload para Supabase concluído com sucesso');
-
-      // 2. Enviar para análise via API
+      // Enviar diretamente para análise via API (sem Supabase Storage por ora)
       console.log('Enviando para análise via API...');
       const formData = new FormData();
       formData.append('file', file);
@@ -102,30 +91,11 @@ const GnssUploader = () => {
         },
       });
 
-      // 3. Salvar resultado da análise no banco
+      // Salvar resultado da análise no banco (opcional)
       if (response.data.success) {
-        const analysisData = {
-          file_name: file.name,
-          file_url: uploadResult.data.publicUrl,
-          file_size: file.size,
-          satellites_count: response.data.file_info.satellites_count,
-          satellites_list: response.data.file_info.satellites_list,
-          duration_hours: response.data.file_info.duration_hours,
-          quality_status: response.data.file_info.quality_status,
-          quality_color: response.data.file_info.quality_color,
-          issues: response.data.file_info.issues,
-          technical_report: response.data.technical_report,
-          metadata: {
-            original_filename: file.name,
-            upload_timestamp: new Date().toISOString()
-          }
-        };
-
-        const { error: dbError } = await db.gnssAnalyses.create(analysisData);
-        
-        if (dbError) {
-          console.error('Erro ao salvar análise no banco:', dbError);
-        }
+        console.log('Análise concluída com sucesso');
+        // TODO: Implementar salvamento no banco se necessário
+        // Por ora, apenas mostramos o resultado na interface
       }
 
       setResult(response.data);
