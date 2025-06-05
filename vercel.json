@@ -1,9 +1,4 @@
 {
-  "version": 2,
-  "buildCommand": "npm ci && npm run build",
-  "outputDirectory": "build",
-  "installCommand": "npm ci",
-  "framework": "create-react-app",
   "rewrites": [
     {
       "source": "/(.*)",
