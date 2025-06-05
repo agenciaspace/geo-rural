@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from '../config/axios';
 import API_ENDPOINTS from '../config/api';
-import { storage, db } from '../config/supabase';
+// import { storage, db } from '../config/supabase'; // Removido temporariamente
 
 const GnssUploader = () => {
   const [file, setFile] = useState(null);
