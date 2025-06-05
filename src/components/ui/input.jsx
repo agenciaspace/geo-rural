@@ -1,5 +1,10 @@
 import * as React from "react"
-import { cn } from "../../lib/utils"
+import { clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+function cn(...inputs) {
+  return twMerge(clsx(inputs))
+}
 
 const Input = React.forwardRef(({ className, type, ...props }, ref) => {
   return (
