@@ -13,14 +13,22 @@ const GnssUploader = () => {
   const handleFileSelect = (selectedFile) => {
     const allowedTypes = ['.21o', '.rnx', '.zip'];
     const fileExtension = selectedFile.name.toLowerCase().slice(selectedFile.name.lastIndexOf('.'));
+    const maxSizeBytes = 50 * 1024 * 1024; // 50MB limite
     
-    if (allowedTypes.includes(fileExtension)) {
-      setFile(selectedFile);
-      setError(null);
-    } else {
+    if (!allowedTypes.includes(fileExtension)) {
       setError('Tipo de arquivo não suportado. Use arquivos .21O, .RNX ou .ZIP');
       setFile(null);
+      return;
     }
+    
+    if (selectedFile.size > maxSizeBytes) {
+      setError(`Arquivo muito grande. Tamanho máximo permitido: 50MB. Seu arquivo: ${(selectedFile.size / 1024 / 1024).toFixed(2)}MB`);
+      setFile(null);
+      return;
+    }
+    
+    setFile(selectedFile);
+    setError(null);
   };
 
   const handleDrop = (e) => {
@@ -106,7 +114,21 @@ const GnssUploader = () => {
 
       setResult(response.data);
     } catch (err) {
-      setError(err.response?.data?.detail || err.message || 'Erro ao processar arquivo');
+      let errorMessage = 'Erro ao processar arquivo';
+      
+      if (err.response?.status === 413) {
+        errorMessage = `Arquivo muito grande para upload. Tamanho máximo permitido: 50MB. Tente compactar o arquivo ou use um arquivo menor.`;
+      } else if (err.response?.status === 422) {
+        errorMessage = 'Formato de arquivo inválido. Verifique se é um arquivo RINEX válido.';
+      } else if (err.response?.status === 500) {
+        errorMessage = 'Erro interno do servidor. Tente novamente em alguns minutos.';
+      } else if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -136,7 +158,7 @@ const GnssUploader = () => {
             <h3>Clique ou arraste um arquivo aqui</h3>
             <p>Arquivos suportados: .21O, .RNX, .ZIP</p>
             <p style={{ fontSize: '0.9rem', color: '#666' }}>
-              Tamanho máximo: 100MB
+              Tamanho máximo: 50MB
             </p>
           </div>
           <input

@@ -2,19 +2,26 @@ import React, { useState } from 'react';
 import BudgetSimulator from './components/BudgetSimulator';
 import GnssUploader from './components/GnssUploader';
 import ConversionLanding from './components/ConversionLanding';
-import DemoAccess from './components/DemoAccess';
+import Login from './components/Login';
 import { AuthProvider } from './hooks/useAuth';
 
 function App() {
-  const [currentView, setCurrentView] = useState('landing'); // 'landing', 'demo-access', 'app'
+  const [currentView, setCurrentView] = useState('landing'); // 'landing', 'login', 'app'
   const [activeTab, setActiveTab] = useState('budget');
+  const [user, setUser] = useState(null);
 
   const handleAccessApp = () => {
-    setCurrentView('demo-access');
+    setCurrentView('login');
   };
 
-  const handleAccessDemo = () => {
+  const handleLoginSuccess = (userData) => {
+    setUser(userData);
     setCurrentView('app');
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setCurrentView('landing');
   };
 
   const handleBackToLanding = () => {
@@ -25,10 +32,10 @@ function App() {
     return <ConversionLanding onAccessApp={handleAccessApp} />;
   }
 
-  if (currentView === 'demo-access') {
+  if (currentView === 'login') {
     return (
-      <DemoAccess 
-        onAccessDemo={handleAccessDemo}
+      <Login 
+        onLoginSuccess={handleLoginSuccess}
         onBackToLanding={handleBackToLanding}
       />
     );
@@ -44,7 +51,7 @@ function App() {
             <p>Plataforma de Georreferenciamento e Análise GNSS</p>
           </div>
           <button 
-            onClick={handleBackToLanding}
+            onClick={handleLogout}
             style={{
               background: 'transparent',
               border: '2px solid white',
@@ -55,7 +62,7 @@ function App() {
               fontSize: '0.9rem'
             }}
           >
-            ← Voltar ao Site
+            Sair
           </button>
         </div>
       </div>
