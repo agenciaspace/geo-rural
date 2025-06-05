@@ -8,19 +8,16 @@ import { AuthProvider } from './hooks/useAuth';
 function App() {
   const [currentView, setCurrentView] = useState('landing'); // 'landing', 'login', 'app'
   const [activeTab, setActiveTab] = useState('budget');
-  const [user, setUser] = useState(null);
 
   const handleAccessApp = () => {
     setCurrentView('login');
   };
 
   const handleLoginSuccess = (userData) => {
-    setUser(userData);
     setCurrentView('app');
   };
 
   const handleLogout = () => {
-    setUser(null);
     setCurrentView('landing');
   };
 
