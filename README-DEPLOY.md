@@ -14,8 +14,8 @@
 3. Configure as seguintes opções:
    - **Framework Preset**: Create React App
    - **Root Directory**: ./
-   - **Build Command**: `cd frontend && npm run build`
-   - **Output Directory**: `frontend/build`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `build`
 
 ### 2. Via CLI
 
@@ -37,10 +37,8 @@ georural-pro/
 │   ├── upload-gnss.py     # Endpoint para upload GNSS
 │   ├── calculate-budget.py # Cálculo de orçamento
 │   └── generate-proposal-pdf.py # Geração de PDF
-├── frontend/              # React App
-│   ├── build/            # Arquivos buildados
-│   ├── src/              # Código fonte
-│   └── package.json
+├── src/                   # Código fonte React
+├── public/                # Arquivos estáticos
 ├── backend/              # Backend original (não usado na Vercel)
 └── vercel.json           # Configuração da Vercel
 ```
