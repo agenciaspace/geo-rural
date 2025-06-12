@@ -50,7 +50,7 @@
 
 1. Copie o arquivo `.env.example` para `.env.local`:
    ```bash
-   cp frontend/.env.example frontend/.env.local
+   cp .env.example .env.local
    ```
 
 2. Edite o arquivo `.env.local` com suas chaves:
@@ -63,7 +63,6 @@
 
 1. Inicie o projeto:
    ```bash
-   cd frontend
    npm start
    ```
 

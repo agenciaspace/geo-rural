@@ -14,8 +14,8 @@
    - **Framework Preset**: Create React App
    - **Root Directory**: `./` (deixe vazio)
    - **Build Command**: `npm run build`
-   - **Output Directory**: `frontend/build`
-   - **Install Command**: `npm install && cd frontend && npm install`
+   - **Output Directory**: `build`
+   - **Install Command**: `npm install`
 
 #### 2. Variáveis de Ambiente
 
@@ -35,16 +35,14 @@
 **Solução**: Certifique-se de que a estrutura está assim:
 ```
 georural-pro/
-├── package.json          # Na raiz (copiado do frontend)
+├── package.json          # Configuração do React
 ├── vercel.json           # Configuração da Vercel
 ├── api/                  # Vercel Functions
 │   ├── upload-gnss.py
 │   ├── calculate-budget.py
 │   └── generate-proposal-pdf.py
-├── frontend/             # React App
-│   ├── build/           # Gerado pelo npm run build
-│   ├── src/
-│   └── package.json
+├── src/                  # Código fonte React
+├── public/               # Arquivos estáticos
 └── supabase/            # Scripts SQL
 ```
 
@@ -68,7 +66,7 @@ vercel
 # Seguir instruções e configurar:
 # - Framework: Create React App
 # - Build Command: npm run build
-# - Output Directory: frontend/build
+# - Output Directory: build
 ```
 
 ## 🔍 Debug
@@ -84,7 +82,7 @@ vercel
 npm run build
 
 # Servir estaticamente
-npx serve frontend/build
+npx serve build
 
 # Deve funcionar em localhost:3000
 ```
