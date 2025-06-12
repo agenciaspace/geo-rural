@@ -32,7 +32,8 @@ echo "✅ Dependências básicas encontradas"
 # Diretório do projeto
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$PROJECT_DIR/backend"
-FRONTEND_DIR="$PROJECT_DIR/frontend"
+# React app está localizado na raiz do projeto
+FRONTEND_DIR="$PROJECT_DIR"
 
 # Limpar builds anteriores
 echo "🧹 Limpando builds anteriores..."

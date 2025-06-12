@@ -21,10 +21,10 @@ fi
 echo "✅ Build concluído com sucesso!"
 
 # Verificar se arquivo .env.local existe
-if [ ! -f "frontend/.env.local" ]; then
+if [ ! -f ".env.local" ]; then
     echo "⚠️  Arquivo .env.local não encontrado!"
     echo "Copie o arquivo .env.example e configure as variáveis do Supabase:"
-    echo "cp frontend/.env.example frontend/.env.local"
+    echo "cp .env.example .env.local"
     echo ""
     echo "Configure as seguintes variáveis:"
     echo "- REACT_APP_SUPABASE_URL"

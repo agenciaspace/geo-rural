@@ -5,6 +5,6 @@ echo "Instalando dependências na raiz..."
 npm install
 
 echo "Instalando dependências do frontend..."
-cd frontend && npm install
+npm install
 
 echo "Instalação concluída!"
