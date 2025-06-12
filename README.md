@@ -24,7 +24,7 @@ cd georural-pro
 2. Execute os scripts SQL em `supabase/`
 3. Configure `.env.local`:
 ```bash
-cp frontend/.env.example frontend/.env.local
+cp .env.example .env.local
 # Edite com suas chaves do Supabase
 ```
 
@@ -47,7 +47,7 @@ No painel da Vercel, adicione:
 
 ```bash
 # Instalar dependências
-cd frontend && npm install
+npm install
 
 # Iniciar desenvolvimento
 npm start
@@ -58,10 +58,10 @@ npm start
 ```
 georural-pro/
 ├── api/                 # Vercel Functions (Python)
-├── frontend/            # React App com shadcn/ui
+├── src/                 # Código React
+├── public/              # Arquivos estáticos
 ├── supabase/           # Scripts SQL do banco
 ├── vercel.json         # Configuração Vercel
-└── docs/               # Documentação
 ```
 
 ## 🔧 Solução de Problemas
@@ -131,7 +131,6 @@ MIT License - veja [LICENSE](LICENSE) para detalhes.
 
 - 📧 Email: suporte@georural.pro
 - 💬 Issues: [GitHub Issues](https://github.com/seu-usuario/georural-pro/issues)
-- 📖 Docs: [Documentação Completa](./docs/)
 
 ---
 
