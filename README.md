@@ -53,6 +53,15 @@ cd frontend && npm install
 npm start
 ```
 
+## 🧪 Testes
+
+Para garantir a qualidade do código Python, utilize o **pytest**. Após instalar as dependências do backend, execute:
+
+```bash
+pip install -r backend/requirements.txt pytest
+pytest
+```
+
 ## 📁 Estrutura do Projeto
 
 ```
