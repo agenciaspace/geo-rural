@@ -198,9 +198,18 @@ class PDFGenerator:
         
         generation_date = datetime.now().strftime("%d/%m/%Y às %H:%M")
         story.append(Spacer(1, 10))
-        story.append(Paragraph(f"Proposta gerada em {generation_date}", 
-                              ParagraphStyle(name='Footer', parent=self.styles['Normal'], 
-                                           fontSize=8, textColor=colors.grey, alignment=TA_CENTER)))
+        story.append(
+            Paragraph(
+                f"Proposta gerada em {generation_date}",
+                ParagraphStyle(
+                    name='Footer',
+                    parent=self.styles['Normal'],
+                    fontSize=8,
+                    textColor=colors.grey,
+                    alignment=TA_CENTER,
+                )
+            )
+        )
         
         # Gera o PDF
         doc.build(story)
