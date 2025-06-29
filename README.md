@@ -1,6 +1,32 @@
-# GeoRural Pro 🌱
+# Precizu 🌱
 
 Plataforma completa de georreferenciamento rural com IA, simulador de orçamentos e análise GNSS.
+
+## 🚀 Desenvolvimento Local (Início Rápido)
+
+Para rodar o projeto localmente para testes e desenvolvimento:
+
+### Pré-requisitos
+- Python 3.8+
+- Node.js 16+
+- npm
+
+### Setup Automatizado
+```bash
+# 1. Clone o repositório
+git clone https://github.com/seu-usuario/precizu.git
+cd precizu
+
+# 2. Configure o ambiente
+./dev-setup.sh
+
+# 3. Inicie o projeto  
+./dev-start.sh
+```
+
+**Acesse**: http://localhost:3000 (Frontend) | http://localhost:8000 (Backend)
+
+📖 **Guia Completo**: [DEV-LOCAL-GUIDE.md](./DEV-LOCAL-GUIDE.md)
 
 ## ✨ Funcionalidades
 
@@ -15,8 +41,8 @@ Plataforma completa de georreferenciamento rural com IA, simulador de orçamento
 
 ### 1. Clone e Configure
 ```bash
-git clone https://github.com/seu-usuario/georural-pro.git
-cd georural-pro
+git clone https://github.com/seu-usuario/precizu.git
+cd precizu
 ```
 
 ### 2. Configure o Supabase
@@ -56,7 +82,7 @@ npm start
 ## 📁 Estrutura do Projeto
 
 ```
-georural-pro/
+precizu/
 ├── api/                 # Vercel Functions (Python)
 ├── frontend/            # React App com shadcn/ui
 ├── supabase/           # Scripts SQL do banco
@@ -129,8 +155,8 @@ MIT License - veja [LICENSE](LICENSE) para detalhes.
 
 ## 📞 Suporte
 
-- 📧 Email: suporte@georural.pro
-- 💬 Issues: [GitHub Issues](https://github.com/seu-usuario/georural-pro/issues)
+- 📧 Email: suporte@precizu.pro
+- 💬 Issues: [GitHub Issues](https://github.com/seu-usuario/precizu/issues)
 - 📖 Docs: [Documentação Completa](./docs/)
 
 ---

@@ -45,7 +45,7 @@ RECOMENDAÇÕES:
 - Evitar obstruções e interferências durante coleta
 
 ========================================
-GeoRural Pro - Análise Automatizada
+Precizu - Análise Automatizada
 """
             }
             
