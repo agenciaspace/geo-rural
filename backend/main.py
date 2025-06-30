@@ -27,17 +27,17 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class UploadSizeMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app, max_upload_size: int = 100 * 1024 * 1024):  # 100MB
+    def __init__(self, app, max_upload_size: int = 500 * 1024 * 1024):  # 500MB para Railway
         super().__init__(app)
         self.max_upload_size = max_upload_size
-
+        
     async def dispatch(self, request: Request, call_next):
         if request.method == "POST" and "multipart/form-data" in request.headers.get("content-type", ""):
             content_length = request.headers.get("content-length")
             if content_length:
                 content_length = int(content_length)
                 if content_length > self.max_upload_size:
-                    return HTTPException(
+                    raise HTTPException(
                         status_code=413,
                         detail=f"Arquivo muito grande. Máximo permitido: {self.max_upload_size // (1024*1024)}MB"
                     )
@@ -143,31 +143,6 @@ def analyze_rinex_file(file_path: str) -> Dict[str, Any]:
                     geodetic_result = processor.process_rinex(file_path)
                     
                     if geodetic_result['success']:
-                        # Gerar visualizações (se disponível)
-                        visualizations = {}
-                        try:
-                            from visualization_generator import GNSSVisualizationGenerator
-                            viz_gen = GNSSVisualizationGenerator()
-                            
-                            # Simular dados PPP para demonstração
-                            ppp_results = [{
-                                'epoch': i,
-                                'convergence': min(1.0, i / 1000.0),
-                                'dop': {'pdop': 2.0 - (i / 5000.0), 'hdop': 1.5 - (i / 7000.0), 'vdop': 2.5 - (i / 4000.0)}
-                            } for i in range(geodetic_result['quality']['epochs_processed'])]
-                            
-                            visualizations = {
-                                'convergence_plot': viz_gen.generate_convergence_plot(ppp_results),
-                                'precision_plot': viz_gen.generate_precision_plot(ppp_results),
-                                'skyplot': viz_gen.generate_satellite_skyplot([]),
-                                'dop_plot': viz_gen.generate_dop_plot(ppp_results),
-                                'quality_summary': viz_gen.generate_quality_summary_chart(geodetic_result)
-                            }
-                            logger.info("✅ Visualizações geradas com sucesso")
-                        except Exception as viz_error:
-                            logger.warning(f"⚠️ Visualizações não disponíveis: {viz_error}")
-                            visualizations = {}
-                        
                         # Combinar resultados da análise básica com processamento geodésico
                         return {
                             "success": True,
@@ -185,8 +160,7 @@ def analyze_rinex_file(file_path: str) -> Dict[str, Any]:
                                 "epochs_analyzed": basic_analysis['file_info'].get('epochs_analyzed', 0),
                                 "approx_position": basic_analysis['file_info'].get('approx_position')
                             },
-                            "technical_report": generate_combined_report(basic_analysis['file_info'], geodetic_result),
-                            "visualizations": visualizations
+                            "technical_report": generate_combined_report(basic_analysis['file_info'], geodetic_result)
                         }
                     else:
                         logger.warning("Processamento geodésico falhou, retornando análise básica")
@@ -251,120 +225,73 @@ def analyze_rinex_enhanced(file_path: str) -> Dict[str, Any]:
         for i, line in enumerate(lines[:50]):  # Verifica primeiras 50 linhas para o header
             if 'RINEX VERSION' in line:
                 rinex_version = line[:9].strip()
-                logger.info(f"Versão RINEX: {rinex_version}")
-            
-            if 'APPROX POSITION XYZ' in line:
+                logger.info(f"RINEX versão detectada: {rinex_version}")
+            elif 'APPROX POSITION XYZ' in line:
                 try:
-                    coords = line[:60].split()
-                    approx_position = [float(coords[0]), float(coords[1]), float(coords[2])]
-                    logger.info(f"Posição aproximada encontrada: {approx_position}")
-                except Exception as e:
-                    logger.warning(f"Erro ao extrair posição aproximada: {e}")
-            
-            if 'END OF HEADER' in line:
+                    coords = line[:42].strip().split()
+                    if len(coords) >= 3:
+                        approx_position = {
+                            'x': float(coords[0]),
+                            'y': float(coords[1]),
+                            'z': float(coords[2])
+                        }
+                        logger.info(f"Posição aproximada encontrada: {approx_position}")
+                except:
+                    pass
+            elif 'END OF HEADER' in line:
                 header_end = True
-                logger.info(f"Fim do header na linha {i}")
+                logger.info(f"Final do header encontrado na linha {i+1}")
                 break
         
-        # Análise das observações
-        in_obs_section = header_end
+        if not header_end:
+            logger.warning("Final do header não encontrado, assumindo linha 12")
+        
+        # Análise das observações (versão 2)
         epoch_count = 0
-        
-        for line_num, line in enumerate(lines):
-            if not in_obs_section and 'END OF HEADER' in line:
-                in_obs_section = True
-                continue
-            
-            if in_obs_section and line.strip():
-                try:
-                    # Formato típico de época RINEX v3: "> 2023 11 20 12 00  0.0000000  0 12"
-                    if line.startswith('>'):
-                        epoch_count += 1
-                        # Extrai número de satélites da época
-                        parts = line.split()
-                        if len(parts) >= 8:
-                            num_sats_epoch = int(parts[7])
-                            obs_count += num_sats_epoch
-                    
-                    # Identifica satélites (formato: G01, R02, E03, C04)
-                    elif len(line) >= 3:
-                        sat_id = line[:3].strip()
-                        if len(sat_id) == 3 and sat_id[0] in ['G', 'R', 'E', 'C', 'J', 'I']:
-                            satellites_found.add(sat_id)
-                
-                except (ValueError, IndexError):
-                    continue
-        
-        # Análise mais detalhada para RINEX v2 (formato clássico)
-        if epoch_count == 0:
-            logger.info("Analisando formato RINEX v2...")
-            
-            for line_num, line in enumerate(lines):
-                if line_num <= 12:  # Skip apenas até END OF HEADER (linha 12)
-                    continue
-                    
-                if line.strip() and len(line) > 29:
-                    try:
-                        # Formato RINEX v2: " 23  7 24 20 57 15.0000000  0 15G24G11G28..."
-                        # Posições: 1-2=ano, 4-5=mês, 7-8=dia, 10-11=hora, 13-14=min, 16-26=seg, 29-31=flag/num_sats
-                        if (line[0] == ' ' and 
-                            len(line) >= 32 and
-                            line[1:3].isdigit() and  # ano (23)
-                            line[4:6].strip().isdigit() and  # mês (7)
-                            line[7:9].strip().isdigit()):    # dia (24)
-                            
-                            epoch_count += 1
-                            if epoch_count == 1:
-                                logger.info(f"Primeira época encontrada na linha {line_num}: '{line.rstrip()}'")
-                            
-                            # Extrai número de satélites (posição 29-32) e dados de satélites
-                            sat_count_str = line[29:32].strip()
-                            if sat_count_str.isdigit():
-                                num_sats_epoch = int(sat_count_str)
-                                obs_count += num_sats_epoch
-                                
-                                # Extrai IDs dos satélites - pode estar nesta linha e nas próximas
-                                sat_data = line[32:].strip()
-                                
-                                # Processa linha atual e próximas linhas de satélites
-                                current_line_idx = line_num
-                                all_satellite_data = sat_data
-                                
-                                # Verifica se há mais linhas de satélites (continuação)
-                                while (current_line_idx + 1 < len(lines) and 
-                                       lines[current_line_idx + 1].strip() and
-                                       lines[current_line_idx + 1].startswith('                                ')):  # 32 espaços
-                                    current_line_idx += 1
-                                    all_satellite_data += lines[current_line_idx].strip()
-                                
-                                # Parse dos satélites (formato: G24G11G28R14R13...)
-                                i = 0
-                                while i < len(all_satellite_data) - 2:
-                                    if all_satellite_data[i] in ['G', 'R', 'E', 'C', 'J', 'I']:
-                                        if i + 2 < len(all_satellite_data):
-                                            sat_num = all_satellite_data[i+1:i+3]
-                                            if sat_num.isdigit():
-                                                sat_id = all_satellite_data[i:i+3]
-                                                satellites_found.add(sat_id)
-                                    i += 3
-                                
-                                # Log apenas para primeira época
-                                if epoch_count == 1:
-                                    logger.info(f"Primeira época: {num_sats_epoch} satélites - IDs: {sorted(list(satellites_found))}")
-                                
-                                # Log periodicamente para acompanhar progresso
-                                if epoch_count % 100 == 0:
-                                    logger.info(f"Processadas {epoch_count} épocas, {len(satellites_found)} satélites únicos")
-                                
-                    except (ValueError, IndexError) as e:
-                        continue
-        
-        # Calcula duração real baseada em timestamps
-        duration_hours = 0
         first_time = None
         last_time = None
         
+        logger.info("Procurando épocas de observação...")
+        
+        # Analisa dados de observação linha por linha
+        for i, line in enumerate(lines[13:], start=13):  # Skip header
+            if not line.strip():
+                continue
+                
+            # Verifica se é linha de época (formato RINEX v2)
+            if (len(line) > 29 and line[0] == ' ' and 
+                line[1:3].isdigit() and line[4:6].strip().isdigit() and line[7:9].strip().isdigit()):
+                
+                epoch_count += 1
+                if epoch_count <= 100:  # Log apenas primeiras épocas para debug
+                    logger.info(f"🔍 Primeira linha de época encontrada na linha {i}: '{line.strip()}'")
+                    
+                # Extrai IDs de satélites desta época
+                satellite_section = line[32:68]  # Seção de satélites na linha de época
+                sat_ids = []
+                for j in range(0, len(satellite_section), 3):
+                    sat_id = satellite_section[j:j+3].strip()
+                    if sat_id and len(sat_id) >= 2:
+                        sat_ids.append(sat_id)
+                        satellites_found.add(sat_id)
+                        
+                # Se há linha de continuação (mais de 12 satélites)
+                next_line_idx = i + 1
+                while (next_line_idx < len(lines) and len(lines[next_line_idx]) > 32 and 
+                       lines[next_line_idx][32:].strip() and not lines[next_line_idx][0].isdigit()):
+                    continuation_line = lines[next_line_idx]
+                    sat_section = continuation_line[32:68]
+                    for j in range(0, len(sat_section), 3):
+                        sat_id = sat_section[j:j+3].strip()
+                        if sat_id and len(sat_id) >= 2:
+                            sat_ids.append(sat_id)
+                            satellites_found.add(sat_id)
+                    next_line_idx += 1
+        
+        logger.info(f"✅ {epoch_count} épocas carregadas")
+        
         # Sempre tenta calcular duração precisa baseada em timestamps reais
+        duration_hours = 0.0
         if epoch_count > 0:
             # Procura timestamps de primeira e última epoch para calcular duração real
             try:
@@ -718,7 +645,7 @@ Precizu - Análise Automatizada
 
 @app.post("/api/upload-gnss")
 async def upload_gnss_file(file: UploadFile = File(...)):
-    """Endpoint para upload e análise de arquivos GNSS"""
+    """Endpoint para upload e análise de arquivo GNSS"""
     tmp_file_path = None
     
     try:
@@ -728,36 +655,36 @@ async def upload_gnss_file(file: UploadFile = File(...)):
         logger.info(f"=== INICIANDO UPLOAD GNSS ===")
         logger.info(f"Arquivo: {file.filename}")
         logger.info(f"Content-Type: {file.content_type}")
-        
-        # Verificar tamanho do arquivo (100MB limite)
-        MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
+
+        # Verificar tamanho do arquivo (500MB limite)
+        MAX_FILE_SIZE = 500 * 1024 * 1024  # 500MB
         file_content = await file.read()
         file_size = len(file_content)
         
         logger.info(f"Tamanho do arquivo: {file_size} bytes ({file_size / (1024*1024):.2f} MB)")
-        
+
         if file_size > MAX_FILE_SIZE:
             raise HTTPException(
                 status_code=413,
                 detail=f"Arquivo muito grande. Tamanho máximo: {MAX_FILE_SIZE // (1024*1024)}MB. Seu arquivo: {file_size // (1024*1024)}MB"
             )
-        
+
         # Reset file pointer
         await file.seek(0)
-        
+
         # Verifica extensão do arquivo
         allowed_extensions = ['.21o', '.rnx', '.zip', '.obs', '.nav', '.23o', '.22o', '.24o']
         filename = file.filename or "unknown"
         file_extension = os.path.splitext(filename.lower())[1]
         
         logger.info(f"Extensão detectada: {file_extension}")
-        
+
         if file_extension not in allowed_extensions:
             raise HTTPException(
                 status_code=400, 
                 detail=f"Tipo de arquivo não suportado. Use: {', '.join(allowed_extensions)}"
             )
-        
+
         # Cria arquivo temporário
         logger.info("Criando arquivo temporário...")
         with tempfile.NamedTemporaryFile(delete=False, suffix=file_extension) as tmp_file:

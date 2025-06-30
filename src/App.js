@@ -1,16 +1,26 @@
 import React, { useState } from 'react';
 import BudgetSimulator from './components/BudgetSimulator';
 import GnssUploader from './components/GnssUploader';
+import Dashboard from './components/Dashboard';
+import LandingPage from './components/LandingPage';
 import ConversionLanding from './components/ConversionLanding';
 import Login from './components/Login';
 import { AuthProvider } from './hooks/useAuth';
 
 function App() {
-  const [currentView, setCurrentView] = useState('landing'); // 'landing', 'login', 'app'
-  const [activeTab, setActiveTab] = useState('budget');
+  const [currentView, setCurrentView] = useState('educational'); // 'educational', 'conversion', 'login', 'app'
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   const handleAccessApp = () => {
     setCurrentView('login');
+  };
+
+  const handleGoToConversion = () => {
+    setCurrentView('conversion');
+  };
+
+  const handleBackToEducational = () => {
+    setCurrentView('educational');
   };
 
   const handleLoginSuccess = (userData) => {
@@ -18,17 +28,34 @@ function App() {
   };
 
   const handleLogout = () => {
-    setCurrentView('landing');
+    setCurrentView('educational');
   };
 
   const handleBackToLanding = () => {
-    setCurrentView('landing');
+    setCurrentView('educational');
   };
 
-  if (currentView === 'landing') {
-    return <ConversionLanding onAccessApp={handleAccessApp} />;
+  // Página Educacional (Landing Principal)
+  if (currentView === 'educational') {
+    return (
+      <LandingPage 
+        onAccessApp={handleAccessApp}
+        onConversionLanding={handleGoToConversion}
+      />
+    );
   }
 
+  // Página de Conversão
+  if (currentView === 'conversion') {
+    return (
+      <ConversionLanding 
+        onAccessApp={handleAccessApp}
+        onBackToEducational={handleBackToEducational}
+      />
+    );
+  }
+
+  // Página de Login
   if (currentView === 'login') {
     return (
       <Login 
@@ -38,13 +65,14 @@ function App() {
     );
   }
 
+  // Aplicação Principal
   return (
     <AuthProvider>
       <div className="App">
       <div className="header">
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h1>GeoRural Pro</h1>
+            <h1>PRECIZU</h1>
             <p>Plataforma de Georreferenciamento e Análise GNSS</p>
           </div>
           <button 
@@ -73,7 +101,7 @@ function App() {
           textAlign: 'center'
         }}>
           <h3 style={{ margin: '0 0 0.5rem 0', color: '#2c5aa0' }}>
-            🎉 Bem-vindo ao Demo do GeoRural Pro!
+            🎉 Bem-vindo ao Demo do PRECIZU!
           </h3>
           <p style={{ margin: 0, color: '#666' }}>
             Explore todas as funcionalidades. Esta é uma versão de demonstração com dados fictícios.
@@ -82,10 +110,16 @@ function App() {
 
         <div className="nav-tabs">
           <button 
+            className={`nav-tab ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setActiveTab('dashboard')}
+          >
+            📊 Dashboard
+          </button>
+          <button 
             className={`nav-tab ${activeTab === 'budget' ? 'active' : ''}`}
             onClick={() => setActiveTab('budget')}
           >
-            📊 Simulador de Orçamento
+            💰 Simulador de Orçamento
           </button>
           <button 
             className={`nav-tab ${activeTab === 'gnss' ? 'active' : ''}`}
@@ -95,6 +129,7 @@ function App() {
           </button>
         </div>
         
+        {activeTab === 'dashboard' && <Dashboard />}
         {activeTab === 'budget' && <BudgetSimulator />}
         {activeTab === 'gnss' && <GnssUploader />}
       </div>

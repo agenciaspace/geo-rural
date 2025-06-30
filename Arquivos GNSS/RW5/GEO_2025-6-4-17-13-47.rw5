@@ -1,0 +1,17 @@
+JB,NMGEO,DT05-16-2025,TM19:36:38
+MO,AD0,UN1,SF0,000000,EC0,EO0,AU0
+--Coordinate:Brazil/SIRGAS 2000 / UTM zone 22S,Ellipsoid:GRS 1980,Projection:Universal Transverse Mercator
+--App:Survey Master,Version:4.0.1.0
+--CRD:Alphanumeric
+LS,HR1.7781
+BP,PNBase:M1,LA-22.375658902,LN-50.253593723,EL555.177598396316,AG0.0,PA0.0581,ATAPC,SRROVER,-- 
+--Entered Rover HR: 1.72 m, Vertical
+LS,HR1.7781
+JB,NMGEO,DT05-16-2025,TM19:36:38
+MO,AD0,UN1,SF0,000000,EC0,EO0,AU0
+--Coordinate:Brazil/SIRGAS 2000 / UTM zone 22S,Ellipsoid:GRS 1980,Projection:Universal Transverse Mercator
+--App:Survey Master,Version:4.0.1.0
+--CRD:Alphanumeric
+LS,HR1.7781
+--Equipment:Jupiter,SN:J11L02014
+--Antenna:N88,Name:Jupiter(NGS),PhaseCenter:0,Middle:0.02,Bottom:0.058,Radius:0.067

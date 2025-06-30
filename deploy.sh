@@ -1,51 +1,127 @@
 #!/bin/bash
 
-echo "🚀 Script de Deploy para Vercel - GeoRural Pro"
-echo "================================================"
+# ========================================
+# Script Principal de Deploy - GeoRural Pro
+# ========================================
 
-# Verificar se vercel CLI está instalado
-if ! command -v vercel &> /dev/null; then
-    echo "❌ Vercel CLI não encontrado. Instalando..."
-    npm install -g vercel
-fi
+# Cores para output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
+NC='\033[0m' # No Color
 
-# Fazer build do projeto
-echo "📦 Fazendo build do projeto..."
-npm run build
+# Função para exibir mensagens coloridas
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
 
-if [ $? -ne 0 ]; then
-    echo "❌ Erro no build. Abortando deploy."
+log_success() {
+    echo -e "${GREEN}[✓]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[✗]${NC} $1"
+}
+
+log_warning() {
+    echo -e "${YELLOW}[!]${NC} $1"
+}
+
+# Banner
+echo -e "\n${MAGENTA}========================================${NC}"
+echo -e "${MAGENTA}     GeoRural Pro - Deploy Master      ${NC}"
+echo -e "${MAGENTA}========================================${NC}\n"
+
+# Verifica se está no diretório correto
+if [ ! -f "package.json" ] || [ ! -d "backend" ]; then
+    log_error "Este script deve ser executado no diretório raiz do projeto!"
     exit 1
 fi
 
-echo "✅ Build concluído com sucesso!"
+# Menu de opções
+echo -e "${YELLOW}Escolha o tipo de deploy:${NC}"
+echo "1) Deploy completo (GitHub + Vercel)"
+echo "2) Deploy apenas no GitHub"
+echo "3) Deploy apenas na Vercel"
+echo "4) Build de produção (sem deploy)"
+echo "5) Cancelar"
+echo
 
-# Verificar se arquivo .env.local existe
-if [ ! -f "frontend/.env.local" ]; then
-    echo "⚠️  Arquivo .env.local não encontrado!"
-    echo "Copie o arquivo .env.example e configure as variáveis do Supabase:"
-    echo "cp frontend/.env.example frontend/.env.local"
-    echo ""
-    echo "Configure as seguintes variáveis:"
-    echo "- REACT_APP_SUPABASE_URL"
-    echo "- REACT_APP_SUPABASE_ANON_KEY"
-    read -p "Pressione Enter quando terminar de configurar..."
-fi
+read -p "Opção: " choice
 
-# Deploy para Vercel
-echo "🚀 Iniciando deploy para Vercel..."
-vercel --prod
+case $choice in
+    1)
+        log_info "Deploy completo selecionado"
+        
+        # Build de produção
+        log_info "Realizando build de produção..."
+        npm run build
+        
+        if [ $? -ne 0 ]; then
+            log_error "Erro no build de produção!"
+            exit 1
+        fi
+        
+        log_success "Build concluído com sucesso"
+        
+        # Deploy no GitHub
+        log_info "Iniciando deploy no GitHub..."
+        ./deploy-github.sh
+        
+        # Deploy na Vercel
+        log_info "Iniciando deploy na Vercel..."
+        ./deploy-vercel.sh
+        
+        log_success "Deploy completo finalizado!"
+        ;;
+        
+    2)
+        log_info "Deploy GitHub selecionado"
+        ./deploy-github.sh
+        ;;
+        
+    3)
+        log_info "Deploy Vercel selecionado"
+        ./deploy-vercel.sh
+        ;;
+        
+    4)
+        log_info "Build de produção selecionado"
+        
+        # Limpa build anterior
+        if [ -d "build" ]; then
+            log_warning "Removendo build anterior..."
+            rm -rf build
+        fi
+        
+        # Build de produção
+        log_info "Realizando build de produção..."
+        echo -e "${YELLOW}Isso pode levar alguns minutos...${NC}"
+        
+        npm run build
+        
+        if [ $? -eq 0 ]; then
+            log_success "Build de produção concluído!"
+            echo -e "${GREEN}Arquivos prontos em: ./build/${NC}"
+        else
+            log_error "Erro no build de produção!"
+            exit 1
+        fi
+        ;;
+        
+    5)
+        log_warning "Deploy cancelado"
+        exit 0
+        ;;
+        
+    *)
+        log_error "Opção inválida!"
+        exit 1
+        ;;
+esac
 
-echo ""
-echo "✅ Deploy concluído!"
-echo ""
-echo "📋 Próximos passos:"
-echo "1. Configure as variáveis de ambiente na Vercel (se ainda não fez)"
-echo "2. Configure a URL de produção no Supabase"
-echo "3. Teste todas as funcionalidades"
-echo ""
-echo "🔗 Links úteis:"
-echo "- Painel Vercel: https://vercel.com/dashboard"
-echo "- Painel Supabase: https://supabase.com/dashboard"
-echo ""
-echo "📚 Consulte VERCEL-TROUBLESHOOTING.md para problemas comuns"
+echo -e "\n${GREEN}========================================${NC}"
+echo -e "${GREEN}         Deploy finalizado!            ${NC}"
+echo -e "${GREEN}========================================${NC}\n"

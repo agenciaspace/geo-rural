@@ -41,7 +41,7 @@ const DemoAccess = ({ onAccessDemo, onBackToLanding }) => {
       }}>
         <div style={{ marginBottom: '2rem' }}>
           <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🌱</span>
-          <h1 style={{ color: '#2c5aa0', margin: '0 0 0.5rem 0' }}>GeoRural Pro</h1>
+          <h1 style={{ color: '#2c5aa0', margin: '0 0 0.5rem 0' }}>PRECIZU</h1>
           <p style={{ color: '#666', margin: 0 }}>Acesso Demo - Experimente Gratuitamente</p>
         </div>
 

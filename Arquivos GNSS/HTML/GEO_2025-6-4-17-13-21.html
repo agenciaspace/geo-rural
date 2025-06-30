@@ -1,0 +1,447 @@
+<!--survey report-->
+<html>
+<head>
+    <title>Reporte HTML</title>
+    <meta charset="UTF-8">
+</head>
+
+<body>
+
+<style>
+        body,
+        p,
+        h1,
+        h2 {
+            padding: 0px;
+            margin: 0px
+        }
+
+        .screen_width,
+        .content {
+            padding: 10px 20px;
+        }
+
+        .screen_width {
+            padding-left: 20px;
+            padding-right: 20px;
+            margin: 0px auto;
+        }
+        .content{
+            width:100%;
+        }
+
+        h1,
+        h2 {
+            margin: 10px 0px 5px 0px;
+            text-align: center;
+        }
+
+        h3,
+        h4 {
+            margin: 8px 0px 4px 0px;
+        }
+
+        .desc {
+            padding: 5px 0px;
+            text-align: right;
+
+        }
+
+        .line {
+            width: 100%;
+            height: 1px;
+            border-bottom: 1px solid #adabab;
+        }
+
+        .properties {
+            /*width: 100%;*/
+            width:auto;
+            table-layout: auto;
+        }
+
+        .properties th {
+            text-align: left;
+            background-color: whitesmoke;
+            min-width: 50px;
+        }
+
+        .properties td {}
+
+        .properties td,
+        .properties th {
+            padding: 2px 3px 2px 3px;
+            border-bottom: 1px solid #888888;
+        }
+        .time{
+            min-width: 180px !important;
+        }
+
+        .row td,
+        .row.th {
+            padding: 2px;
+        }
+
+        .row td:nth-child(1) {
+            width: 200px
+        }
+
+        .row td:nth-child(2) {
+            font-style: oblique;
+        }
+
+        .coo {
+            margin-top: 5px;
+        }
+
+        .b {
+            margin-top: 10px;
+        }
+
+        .pp,
+        .bt {
+            min-width: 55%;
+        }
+
+        .num {
+            text-align: right !important;
+        }
+
+        .text {
+            width: 180px;
+            word-break: break-all;
+            word-wrap: break-word;
+        }
+        .tag{
+            padding: 4px;border-radius: 4px;font-size: 10px;
+        }
+        .laser{
+            background-color: green;
+            color: white;
+        }
+        .imu,.bubble,.img{
+            border: solid #888888 1px;
+            color: #888888;
+        }
+
+</style>
+
+<div class="screen_width">
+    <h1>Reporte HTML</h1>
+    <p class="desc">
+        Survey Master:&nbsp;V4.0.1.0<br>
+        Tempo de geracao:&nbsp;2025/06/04 17:13:25
+    </p>
+    <div class="line"></div>
+</div>
+
+<div class="content">
+<h3>1. Info projeto</h3>
+<table class="row" cellspacing="0" cellpadding="0" border="0">
+        <tr>
+        <td>Projeto:</td>
+        <td>GEO</td>
+    </tr>
+        <tr>
+        <td>Agrimensor:</td>
+        <td></td>
+    </tr>
+        <tr>
+        <td>Descricao:</td>
+        <td></td>
+    </tr>
+        <tr>
+        <td>Zona:</td>
+        <td>GMT-03:00</td>
+    </tr>
+        <tr>
+        <td>unidade de comprimento de exportação:</td>
+        <td>m</td>
+    </tr>
+        <tr>
+        <td>Criar Tempo:</td>
+        <td>2025/05/16 04:36:38 PM</td>
+    </tr>
+    </table>
+
+<h3>2. datum</h3>
+<table class="row coo" cellspacing="0" cellpadding="0" border="0">
+        <tr>
+        <td>datum:</td>
+        <td>Brazil/SIRGAS 2000 / UTM zone 22S</td>
+    </tr>
+        <tr>
+        <td>Use um modelo geoidal:</td>
+        <td>Nao</td>
+    </tr>
+    </table>
+<table class="row coo" cellspacing="0" cellpadding="0" border="0">
+        <tr>
+        <td>a:</td>
+        <td>6378137.000000000000</td>
+    </tr>
+        <tr>
+        <td>1/f:</td>
+        <td>298.257222101000</td>
+    </tr>
+    </table>
+<table class="row coo" cellspacing="0" cellpadding="0" border="0">
+        <tr>
+        <td>Projecao:</td>
+        <td>UTM</td>
+    </tr>
+        <tr>
+        <td>area:</td>
+        <td>22</td>
+    </tr>
+        <tr>
+        <td>hemisferio:</td>
+        <td>S</td>
+    </tr>
+        <tr>
+        <td>Altura Projeto:</td>
+        <td>0.000000000000</td>
+    </tr>
+    </table>
+
+<table class="row coo" cellspacing="0" cellpadding="0" border="0">
+    <tr>
+        <td>Use sete parametros:</td>
+        <td>Nao</td>
+    </tr>
+</table>
+
+<table class="row coo" cellspacing="0" cellpadding="0" border="0">
+    <tr>
+        <td>Correcao aviao:</td>
+        <td>Nao</td>
+    </tr>
+</table>
+
+<table class="row coo" cellspacing="0" cellpadding="0" border="0">
+    <tr>
+        <td>Encaixe Altura:</td>
+        <td>Nao</td>
+    </tr>
+</table>
+
+<h3>
+    3. Par Pontos Calibracao Site
+</h3>
+<table class="properties list pp" cellspacing="0" cellpadding="0" border="0">
+    <tr>
+        <th>Nome Ponto</th>
+        <th class="num">N/E/Z</th>
+        <th class="num">B/L/H</th>
+        <th class="num">Use nivel/<br>H.Resid</th>
+        <th class="num">Use vertical/<br/>V.Resid</th>
+    </tr>
+
+    <tr>
+        <td colspan="5">Nenhum dado</td>
+    </tr>
+    
+</table>
+
+
+<h3>4. Ponto com base</h3>
+<h4 class="b">Base: Base:M1</h4>
+<table class="properties list bt" cellspacing="0" cellpadding="0" border="0">
+    <tr>
+        <th>ID</th>
+        <th>Nome Ponto/<br>Codigo</th>
+        <th class="num">N/E/Z</th>
+        <th class="num">B/L/H</th>
+        <th>Formato correcao</th>
+        <th>Tipo coordenada</th>
+        <th class="num">Turno<br>N/E/Z</th>
+    </tr>
+    <tr>
+        <td rowspan="3">1</td>
+        <td rowspan="2">Base:M1</td>
+        <td class="num">7497060.637</td>
+        <td class="num">-22°37'56.58902"</td>
+        <td rowspan="3">RTCMV3</td>
+        <td rowspan="3">WGS84SPACE</td>
+        <td class="num">0.000</td>
+    </tr>
+    <tr>
+        <td class="num">558916.469</td>
+        <td class="num">-50°25'35.93723"</td>
+        <td class="num">0.000</td>
+    </tr>
+    <tr>
+        <td></td>
+        <td class="num">555.178</td>
+        <td class="num">555.178</td>
+        <td class="num">0.000</td>
+    </tr>
+
+</table>
+
+<h4>Ponto levantamento</h4>
+<table class="properties list" cellspacing="0" cellpadding="0" border="0">
+
+    <tr>
+        <th>ID</th>
+        <th style="min-width: 100px;">Nome Ponto<br/>Codigo</th>
+        <th class="num">N/E/Z</th>
+        <th class="num">B/L/H</th>
+        <th class="num">Precisao<br>N/E/Z</th>
+        <th class="num">Para base<br>N/E/Z</th>
+        <th class="num">NomeBase/<br>Para base</th>
+        <th>RMS/<br>PDOP/<br>HDOP/</th>
+        <th>VDOP/<br>TDOP/<br>GDOP</th>
+
+        <th class="num">Satelite<br>Angulo Mascara/<br>Usado</th>
+        <th>Satelite<br>Total</th>
+        <th class="num">Tipo solução/<br>Atrado diff</th>
+        <th class="num time">Medir tempos/<br>Hora de início/<br>Fim tempo</th>
+        <th class="num">Dispositivo/<br>SN/<br>Altura antena</th>
+        <th class="num">Ultima distancia</th>
+        <th class="num">Compensacao de inclinacao<br>N/E/Z</th>
+        <th class="num">Angulo de inclinacao/<br>Distancia de inclinacao</th>
+        <th class="num">Comprimento do laser</th>
+        <th class="num">Imagem</th>
+        <th>Observacao</th>
+
+            </tr>
+        <tr>
+        <td >2</td>
+        <td style="white-space: nowrap;">M1 <span class="tag bubble">Nivel de bolha</span><br>GEO(Georreferenciamento)</td>
+                <td class="num">7497088.000<br>558946.822<br>551.005</td>
+        <td class="num">-22°37'55.69538"<br>-50°25'34.87758"<br>551.005</td>
+        <td class="num">0.002<br>0.002<br>0.005</td>
+        <td class="num">27.363<br>30.353<br>-4.173</td>
+        <td class="num">Base:M1<br>41.079</td>
+        <td class="num">0.004<br>1.016<br>0.435</td>
+        <td class="num">0.918<br>0.524<br>1.143</td>
+        <td class="num">10<br>32</td>
+        <td>C6+G11+R7+<br>E8+S1+I0+Q0<br>=33</td>
+        <td class="num">Fixo<br>1</td>
+        <td class="num">1<br>2025/05/16 16:39:06<br>2025/05/16 16:39:07</td>
+        <td class="num"><br><br>1.720+0.058</td>
+        <td class="num">40.866</td>
+        <td class="num">-</td>
+        <td class="num">-</td>
+        <td class="num">-</td>
+                <td>
+            <br/>
+                                </td>
+        <td class="text"></td>
+
+            </tr>
+
+        <tr>
+        <td >3</td>
+        <td style="white-space: nowrap;">M2 <span class="tag bubble">Nivel de bolha</span><br>GEO(Georreferenciamento)</td>
+                <td class="num">7497096.301<br>558963.209<br>550.339</td>
+        <td class="num">-22°37'55.42339"<br>-50°25'34.30463"<br>550.339</td>
+        <td class="num">0.002<br>0.002<br>0.004</td>
+        <td class="num">35.663<br>46.740<br>-4.839</td>
+        <td class="num">Base:M1<br>58.991</td>
+        <td class="num">0.003<br>0.981<br>0.424</td>
+        <td class="num">0.885<br>0.496<br>1.100</td>
+        <td class="num">10<br>32</td>
+        <td>C6+G11+R7+<br>E8+S2+I0+Q0<br>=34</td>
+        <td class="num">Fixo<br>1</td>
+        <td class="num">1<br>2025/05/16 16:41:45<br>2025/05/16 16:41:46</td>
+        <td class="num"><br><br>1.720+0.058</td>
+        <td class="num">18.369</td>
+        <td class="num">-</td>
+        <td class="num">-</td>
+        <td class="num">-</td>
+                <td>
+            <br/>
+                                </td>
+        <td class="text"></td>
+
+            </tr>
+
+        <tr>
+        <td >4</td>
+        <td style="white-space: nowrap;">M3 <span class="tag bubble">Nivel de bolha</span><br>GEO(Georreferenciamento)</td>
+                <td class="num">7497103.119<br>558977.160<br>549.865</td>
+        <td class="num">-22°37'55.19990"<br>-50°25'33.81681"<br>549.865</td>
+        <td class="num">0.002<br>0.002<br>0.005</td>
+        <td class="num">42.482<br>60.691<br>-5.312</td>
+        <td class="num">Base:M1<br>74.272</td>
+        <td class="num">0.004<br>1.022<br>0.427</td>
+        <td class="num">0.928<br>0.510<br>1.142</td>
+        <td class="num">10<br>32</td>
+        <td>C6+G11+R8+<br>E8+S2+I0+Q0<br>=35</td>
+        <td class="num">Fixo<br>1</td>
+        <td class="num">1<br>2025/05/16 16:42:21<br>2025/05/16 16:42:22</td>
+        <td class="num"><br><br>1.720+0.058</td>
+        <td class="num">15.528</td>
+        <td class="num">-</td>
+        <td class="num">-</td>
+        <td class="num">-</td>
+                <td>
+            <br/>
+                                </td>
+        <td class="text"></td>
+
+            </tr>
+
+        <tr>
+        <td >5</td>
+        <td style="white-space: nowrap;">M4 <span class="tag bubble">Nivel de bolha</span><br>GEO(Georreferenciamento)</td>
+                <td class="num">7497101.200<br>558981.711<br>549.853</td>
+        <td class="num">-22°37'55.26175"<br>-50°25'33.65711"<br>549.853</td>
+        <td class="num">0.002<br>0.002<br>0.005</td>
+        <td class="num">40.562<br>65.242<br>-5.325</td>
+        <td class="num">Base:M1<br>77.008</td>
+        <td class="num">0.004<br>0.995<br>0.430</td>
+        <td class="num">0.897<br>0.504<br>1.115</td>
+        <td class="num">10<br>31</td>
+        <td>C6+G11+R8+<br>E8+S1+I0+Q0<br>=34</td>
+        <td class="num">Fixo<br>1</td>
+        <td class="num">1<br>2025/05/16 16:43:50<br>2025/05/16 16:43:51</td>
+        <td class="num"><br><br>1.720+0.058</td>
+        <td class="num">4.939</td>
+        <td class="num">-</td>
+        <td class="num">-</td>
+        <td class="num">-</td>
+                <td>
+            <br/>
+                                </td>
+        <td class="text"></td>
+
+            </tr>
+
+    
+</table>
+
+<h3>5. Ponto PPP </h3>
+<table class="properties list" cellspacing="0" cellpadding="0" border="0">
+
+    <tr>
+        <th>ID</th>
+        <th style="min-width: 100px;">Nome Ponto<br/>Codigo</th>
+        <th class="num">N/E/Z</th>
+        <th class="num">B/L/H</th>
+        <th class="num">Precisao<br>N/E/Z</th>
+        <th>RMS/<br>PDOP/<br>HDOP/</th>
+        <th>VDOP/<br>TDOP/<br>GDOP</th>
+        <th class="num">Satelite<br>Angulo Mascara/<br>Usado</th>
+        <th>Satelite<br>Total</th>
+        <th class="num">Tipo solução/<br>Atrado diff</th>
+        <th class="num time">Medir tempos/<br>Hora de início/<br>Fim tempo</th>
+        <th class="num">Dispositivo/<br>SN/<br>Altura antena</th>
+        <th class="num">Ultima distancia</th>
+        <th class="num">Imagem</th>
+        <th>Observacao</th>
+
+            </tr>
+        <tr>
+        <td colspan="12">Nenhum dado</td>
+    </tr>
+    
+</table>
+</div>
+<div class="screen_width">
+    <p class="desc"><br><br>- End -</p>
+    <div class="line"></div>
+</div>
+</body>
+</html>

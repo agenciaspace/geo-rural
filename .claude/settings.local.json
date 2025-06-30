@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rg:*)",
+      "Bash(ls:*)",
+      "Bash(source:*)",
+      "Bash(./dev-start.sh:*)",
+      "Bash(./start-server.sh:*)",
+      "Bash(curl:*)",
+      "WebFetch(domain:geo-rural-b6x3i9tx7-kofe.vercel.app)",
+      "Bash(vercel ls:*)",
+      "Bash(vercel:*)",
+      "WebFetch(domain:geo-rural-35rptmd41-kofe.vercel.app)",
+      "Bash(grep:*)",
+      "Bash(npm run build:*)",
+      "Bash(rm:*)",
+      "Bash(chmod:*)",
+      "Bash(./deploy-railway.sh)",
+      "Bash(railway login:*)",
+      "Bash(./deploy-render.sh)"
+    ],
+    "deny": []
+  }
+}

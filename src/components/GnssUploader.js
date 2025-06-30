@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import axios from '../config/axios';
 import API_ENDPOINTS from '../config/api';
-import GnssChartsDisplay from './GnssChartsDisplay';
 
 const GnssUploader = () => {
   const [file, setFile] = useState(null);
@@ -13,7 +12,7 @@ const GnssUploader = () => {
   const handleFileSelect = (selectedFile) => {
     const allowedTypes = ['.21o', '.rnx', '.zip', '.obs', '.nav'];
     const fileExtension = selectedFile.name.toLowerCase().slice(selectedFile.name.lastIndexOf('.'));
-    const maxSizeBytes = 100 * 1024 * 1024; // 100MB limite
+    const maxSizeBytes = 500 * 1024 * 1024; // 500MB limite
     
     console.log('Arquivo selecionado:', {
       nome: selectedFile.name,
@@ -31,7 +30,7 @@ const GnssUploader = () => {
     }
     
     if (selectedFile.size > maxSizeBytes) {
-      setError(`Arquivo muito grande. Tamanho máximo: 100MB. Seu arquivo: ${(selectedFile.size / 1024 / 1024).toFixed(2)}MB`);
+      setError(`Arquivo muito grande. Tamanho máximo: 500MB. Seu arquivo: ${(selectedFile.size / 1024 / 1024).toFixed(2)}MB`);
       setFile(null);
       return;
     }
@@ -94,12 +93,19 @@ const GnssUploader = () => {
       console.log('Resposta da API:', response.data);
       setResult(response.data);
       
+      // Gerar PDF automaticamente após análise bem-sucedida
+      if (response.data.success && response.data.file_info) {
+        setTimeout(() => {
+          generatePDFAutomatically(response.data.file_info);
+        }, 1000); // Pequeno delay para melhor UX
+      }
+      
     } catch (err) {
       console.error('Erro na análise:', err);
       let errorMessage = 'Erro ao processar arquivo GNSS';
       
       if (err.response?.status === 413) {
-        errorMessage = `Arquivo muito grande para upload. Tamanho máximo: 100MB. Seu arquivo: ${(file.size / 1024 / 1024).toFixed(2)}MB`;
+        errorMessage = `Arquivo muito grande para upload. Tamanho máximo: 500MB. Seu arquivo: ${(file.size / 1024 / 1024).toFixed(2)}MB`;
       } else if (err.response?.status === 422) {
         errorMessage = 'Formato de arquivo inválido. Verifique se é um arquivo RINEX válido.';
       } else if (err.response?.status === 500) {
@@ -135,6 +141,42 @@ const GnssUploader = () => {
     };
     
     alert(`Download iniciado: ${documents[docType]} (funcionalidade em desenvolvimento)`);
+  };
+
+  const generatePDFAutomatically = async (fileInfo) => {
+    try {
+      console.log('Gerando PDF automaticamente...');
+      
+      const response = await fetch('/api/generate-gnss-report-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(fileInfo)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status}`);
+      }
+
+      // Baixa o PDF automaticamente
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `relatorio_gnss_${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      console.log('PDF gerado e baixado automaticamente');
+
+    } catch (error) {
+      console.error('Erro ao gerar PDF automaticamente:', error);
+      // Não exibe erro para o usuário, pois é um processo automático
+    }
   };
 
   const generatePDF = async () => {
@@ -238,7 +280,7 @@ const GnssUploader = () => {
               </span>
             </div>
             <p style={{ fontSize: '0.9rem', color: '#666', margin: 0 }}>
-              Tamanho máximo: 100MB • Formatos RINEX suportados
+              Tamanho máximo: 500MB • Formatos RINEX suportados
             </p>
           </div>
           <input
@@ -489,11 +531,6 @@ const GnssUploader = () => {
               {result.technical_report}
             </div>
           </div>
-
-          {/* Visualizações GNSS */}
-          {result.visualizations && (
-            <GnssChartsDisplay visualizations={result.visualizations} />
-          )}
 
           {/* Botões de Ação */}
           <div style={{ 

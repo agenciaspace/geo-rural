@@ -56,7 +56,7 @@ const Login = ({ onLoginSuccess, onBackToLanding }) => {
         <Card>
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold text-green-800">
-              GeoRural Pro
+              PRECIZU
             </CardTitle>
             <CardDescription>
               {isLogin ? 'Faça login em sua conta' : 'Crie sua conta'}
