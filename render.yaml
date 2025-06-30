@@ -1,20 +1,33 @@
 services:
   - type: web
-    name: precizu-app
-    runtime: python
-    plan: free
+    name: precizu
+    env: python # Imagem base do Render com Python + Node
+    plan: free   # altere para 'starter' se precisar de mais recursos
+
     buildCommand: |
-      # Install Node.js
-      curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-      apt-get install -y nodejs
-      # Install frontend dependencies and build
-      npm install
+      # Instala dependências Node e compila o frontend React
+      npm ci
       npm run build
-      # Install Python dependencies
-      pip install -r backend/requirements.txt
-    startCommand: python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+      # Instala dependências Python do backend
+      pip install --no-cache-dir -r backend/requirements.txt
+
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+
+    buildFilter:
+      # Só dispara rebuild quando arquivos relevantes mudarem
+      paths: [
+        "package.json",
+        "package-lock.json",
+        "src/**",
+        "public/**",
+        "backend/**",
+        "backend/requirements.txt"
+      ]
+
     envVars:
+      - key: NPM_CONFIG_PRODUCTION
+        value: "false"   # Inclui devDependencies (react-scripts)
       - key: PYTHON_VERSION
-        value: "3.11"
-      - key: NODE_VERSION  
+        value: "3.12"
+      - key: NODE_VERSION
         value: "18"
