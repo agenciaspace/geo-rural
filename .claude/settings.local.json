@@ -17,7 +17,14 @@
       "Bash(chmod:*)",
       "Bash(./deploy-railway.sh)",
       "Bash(railway login:*)",
-      "Bash(./deploy-render.sh)"
+      "Bash(./deploy-render.sh)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(git add:*)",
+      "Bash(git remote remove:*)",
+      "Bash(git remote add:*)",
+      "Bash(git config:*)"
     ],
     "deny": []
   }

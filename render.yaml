@@ -28,6 +28,6 @@ services:
       - key: NPM_CONFIG_PRODUCTION
         value: "false"   # Inclui devDependencies (react-scripts)
       - key: PYTHON_VERSION
-        value: "3.12"
+        value: "3.12.3"
       - key: NODE_VERSION
         value: "18"
