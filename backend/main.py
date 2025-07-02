@@ -271,7 +271,7 @@ class BudgetManager:
     def _save_budget_supabase(self, budget_data: Dict[str, Any]):
         """Salva orçamento no Supabase"""
         try:
-            # Preparar dados para Supabase (campos extras opcionais)
+            # Preparar dados para Supabase
             supabase_data = {
                 'id': budget_data['id'],
                 'budget_request': budget_data['budget_request'],
@@ -285,12 +285,21 @@ class BudgetManager:
             # Adicionar campos opcionais se existirem
             optional_fields = ['approval_date', 'rejection_date', 'rejection_comment', 'resubmitted_date', 'version_history']
             for field in optional_fields:
-                if field in budget_data:
+                if field in budget_data and budget_data[field] is not None:
                     supabase_data[field] = budget_data[field]
             
-            # Usar upsert para inserir ou atualizar
-            response = self.supabase.table('budgets').upsert(supabase_data).execute()
-            logger.debug(f"Budget saved to Supabase: {budget_data['id']}")
+            # Tentar inserir primeiro, depois atualizar se necessário
+            try:
+                response = self.supabase.table('budgets').insert(supabase_data).execute()
+                logger.debug(f"Budget inserted to Supabase: {budget_data['id']}")
+            except Exception as insert_error:
+                # Se falhou inserir, tentar atualizar
+                if "duplicate key" in str(insert_error).lower() or "already exists" in str(insert_error).lower():
+                    response = self.supabase.table('budgets').update(supabase_data).eq('id', budget_data['id']).execute()
+                    logger.debug(f"Budget updated in Supabase: {budget_data['id']}")
+                else:
+                    raise insert_error
+            
             return response
         except Exception as e:
             logger.error(f"Error saving budget to Supabase: {e}")
