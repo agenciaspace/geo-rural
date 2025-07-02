@@ -9,7 +9,7 @@ import sys
 import logging
 import tempfile
 import zipfile
-from datetime import datetime, timezone, timedelta
+from datetime import datetime as dt, timezone, timedelta
 from pathlib import Path
 from typing import Dict, Any
 from dataclasses import dataclass
@@ -194,7 +194,7 @@ def analyze_rinex_enhanced(file_path: str) -> Dict[str, Any]:
         
         # Fuso horário GMT-3 (Brasília)
         brasilia_tz = timezone(timedelta(hours=-3))
-        current_time = datetime.now(brasilia_tz)
+        current_time = dt.now(brasilia_tz)
         
         logger.info(f"🔍 Iniciando análise completa RINEX: {file_path}")
         logger.info(f"📅 Horário de processamento: {current_time.strftime('%d/%m/%Y %H:%M:%S')} (GMT-3)")
@@ -342,8 +342,7 @@ def analyze_rinex_enhanced(file_path: str) -> Dict[str, Any]:
                             minute = int(line[13:15])
                             second = float(line[16:26])
                             
-                            from datetime import datetime
-                            timestamp = datetime(year, month, day, hour, minute, int(second))
+                            timestamp = dt(year, month, day, hour, minute, int(second))
                             
                             if first_time is None:
                                 first_time = timestamp
@@ -377,7 +376,7 @@ def analyze_rinex_enhanced(file_path: str) -> Dict[str, Any]:
         processing_time = analysis_end_time - analysis_start_time
         
         # Log final com fuso horário brasileiro
-        end_time_br = datetime.now(brasilia_tz)
+        end_time_br = dt.now(brasilia_tz)
         logger.info(f"🎯 Análise finalizada - Satélites: {num_satellites}, Épocas: {epoch_count:,}, Duração: {duration_hours:.2f}h")
         logger.info(f"⏱️ Processamento: {processing_time:.2f}s ({epoch_count/max(processing_time,0.1):.0f} épocas/segundo)")
         logger.info(f"🕐 Concluído em: {end_time_br.strftime('%d/%m/%Y %H:%M:%S')} (GMT-3)")
@@ -460,7 +459,7 @@ def generate_combined_report(basic_info: Dict[str, Any], geodetic_result: Dict[s
 PARECER TÉCNICO - PROCESSAMENTO GEODÉSICO GNSS
 ==============================================
 
-Data da Análise: {datetime.now(timezone(timedelta(hours=-3))).strftime("%d/%m/%Y %H:%M")} (GMT-3)
+Data da Análise: {dt.now(timezone(timedelta(hours=-3))).strftime("%d/%m/%Y %H:%M")} (GMT-3)
 Tempo de Processamento: {geodetic_result['processing_time']:.1f} segundos
 
 DADOS DO ARQUIVO:
@@ -550,7 +549,7 @@ def generate_geodetic_report(geodetic_result: Dict[str, Any]) -> str:
 PARECER TÉCNICO - PROCESSAMENTO GEODÉSICO GNSS
 ==============================================
 
-Data da Análise: {datetime.now(timezone(timedelta(hours=-3))).strftime("%d/%m/%Y %H:%M")} (GMT-3)
+Data da Análise: {dt.now(timezone(timedelta(hours=-3))).strftime("%d/%m/%Y %H:%M")} (GMT-3)
 Tempo de Processamento: {geodetic_result['processing_time']:.1f} segundos
 
 COORDENADAS CALCULADAS:
@@ -632,7 +631,7 @@ def generate_technical_report(satellites: int, duration: float, quality: str, is
 PARECER TÉCNICO - ANÁLISE GNSS
 ========================================
 
-Data da Análise: {datetime.now(timezone(timedelta(hours=-3))).strftime("%d/%m/%Y %H:%M")} (GMT-3)
+Data da Análise: {dt.now(timezone(timedelta(hours=-3))).strftime("%d/%m/%Y %H:%M")} (GMT-3)
 
 RESUMO DOS DADOS:
 - Satélites observados: {satellites}
