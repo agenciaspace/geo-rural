@@ -77,6 +77,12 @@ const BudgetViewer = () => {
     }
   };
 
+  const copyLinkToClipboard = () => {
+    const fullLink = `${window.location.origin}/budget/${customLink}`;
+    navigator.clipboard.writeText(fullLink);
+    alert('Link copiado para a área de transferência!');
+  };
+
   if (isLoading) {
     return (
       <div style={{ 
@@ -439,10 +445,26 @@ const BudgetViewer = () => {
                 borderRadius: '8px',
                 fontSize: '1.1rem',
                 fontWeight: '600',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                marginRight: '1rem'
               }}
             >
               🏠 Conhecer a Plataforma
+            </button>
+            <button
+              onClick={() => window.location.href = '/#budgets'}
+              style={{
+                background: '#28a745',
+                color: 'white',
+                border: 'none',
+                padding: '1rem 2rem',
+                borderRadius: '8px',
+                fontSize: '1.1rem',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              🏢 Central de Orçamentos
             </button>
           </div>
 

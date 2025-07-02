@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import BudgetSimulator from './components/BudgetSimulator';
-import BudgetManager from './components/BudgetManager';
+import BudgetHub from './components/BudgetHub';
 import GnssUploader from './components/GnssUploader';
 import Dashboard from './components/Dashboard';
 import LandingPage from './components/LandingPage';
@@ -11,6 +10,14 @@ import { AuthProvider } from './hooks/useAuth';
 function App() {
   const [currentView, setCurrentView] = useState('educational'); // 'educational', 'conversion', 'login', 'app'
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  // Check for hash routing to directly access budget hub
+  React.useEffect(() => {
+    const hash = window.location.hash;
+    if (hash === '#budgets' && currentView === 'app') {
+      setActiveTab('budgets');
+    }
+  }, [currentView]);
 
   const handleAccessApp = () => {
     setCurrentView('login');
@@ -117,16 +124,10 @@ function App() {
             📊 Dashboard
           </button>
           <button 
-            className={`nav-tab ${activeTab === 'budget' ? 'active' : ''}`}
-            onClick={() => setActiveTab('budget')}
+            className={`nav-tab ${activeTab === 'budgets' ? 'active' : ''}`}
+            onClick={() => setActiveTab('budgets')}
           >
-            💰 Simulador de Orçamento
-          </button>
-          <button 
-            className={`nav-tab ${activeTab === 'budgetManager' ? 'active' : ''}`}
-            onClick={() => setActiveTab('budgetManager')}
-          >
-            📋 Gerenciar Orçamentos
+            🏢 Central de Orçamentos
           </button>
           <button 
             className={`nav-tab ${activeTab === 'gnss' ? 'active' : ''}`}
@@ -137,8 +138,7 @@ function App() {
         </div>
         
         {activeTab === 'dashboard' && <Dashboard />}
-        {activeTab === 'budget' && <BudgetSimulator />}
-        {activeTab === 'budgetManager' && <BudgetManager />}
+        {activeTab === 'budgets' && <BudgetHub />}
         {activeTab === 'gnss' && <GnssUploader />}
       </div>
     </div>
