@@ -87,7 +87,7 @@ const GnssUploader = () => {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        timeout: 120000, // 2 minutos timeout para arquivos grandes
+        timeout: 300000, // 5 minutos timeout para arquivos grandes
       });
 
       console.log('Resposta da API:', response.data);
