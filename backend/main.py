@@ -17,6 +17,16 @@ from pathlib import Path
 from typing import Dict, Any, Tuple, Optional, List
 from dataclasses import dataclass, asdict
 
+# Supabase
+try:
+    from supabase import create_client, Client
+    from dotenv import load_dotenv
+    load_dotenv()
+    SUPABASE_AVAILABLE = True
+except ImportError:
+    SUPABASE_AVAILABLE = False
+    logger.warning("Supabase not available, using SQLite fallback")
+
 # FastAPI
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.responses import HTMLResponse, FileResponse
@@ -114,23 +124,33 @@ class SavedBudget:
 
 class BudgetManager:
     def __init__(self, storage_dir: str = None):
-        if storage_dir is None:
-            # Use environment variable or default to current directory + data
-            storage_dir = os.getenv('BUDGET_STORAGE_DIR', 'data')
+        # Configuração do Supabase
+        self.supabase_url = os.getenv('SUPABASE_URL')
+        self.supabase_key = os.getenv('SUPABASE_ANON_KEY')
+        self.use_supabase = SUPABASE_AVAILABLE and self.supabase_url and self.supabase_key
         
-        self.storage_dir = Path(storage_dir)
-        try:
-            self.storage_dir.mkdir(exist_ok=True)
-            logger.info(f"Budget storage directory: {self.storage_dir.absolute()}")
-        except Exception as e:
-            logger.warning(f"Could not create storage directory {self.storage_dir}: {e}")
-            # Fallback to temp directory
-            self.storage_dir = Path(tempfile.gettempdir()) / "precizu_budgets"
-            self.storage_dir.mkdir(exist_ok=True)
-            logger.info(f"Using fallback storage directory: {self.storage_dir.absolute()}")
-        
-        self.db_file = self.storage_dir / "budgets.db"
-        self._ensure_database()
+        if self.use_supabase:
+            self.supabase: Client = create_client(self.supabase_url, self.supabase_key)
+            logger.info("Using Supabase for budget storage")
+        else:
+            logger.info("Using SQLite fallback for budget storage")
+            # Fallback para SQLite
+            if storage_dir is None:
+                storage_dir = os.getenv('BUDGET_STORAGE_DIR', 'data')
+            
+            self.storage_dir = Path(storage_dir)
+            try:
+                self.storage_dir.mkdir(exist_ok=True)
+                logger.info(f"Budget storage directory: {self.storage_dir.absolute()}")
+            except Exception as e:
+                logger.warning(f"Could not create storage directory {self.storage_dir}: {e}")
+                # Fallback to temp directory
+                self.storage_dir = Path(tempfile.gettempdir()) / "precizu_budgets"
+                self.storage_dir.mkdir(exist_ok=True)
+                logger.info(f"Using fallback storage directory: {self.storage_dir.absolute()}")
+            
+            self.db_file = self.storage_dir / "budgets.db"
+            self._ensure_database()
     
     def _ensure_database(self):
         """Garante que o banco de dados SQLite existe e está configurado"""
@@ -176,6 +196,41 @@ class BudgetManager:
     
     def _load_budgets(self) -> Dict[str, Dict]:
         """Carrega todos os orçamentos do banco de dados"""
+        if self.use_supabase:
+            return self._load_budgets_supabase()
+        else:
+            return self._load_budgets_sqlite()
+    
+    def _load_budgets_supabase(self) -> Dict[str, Dict]:
+        """Carrega orçamentos do Supabase"""
+        try:
+            response = self.supabase.table('budgets').select('*').order('created_at', desc=True).execute()
+            
+            budgets = {}
+            for row in response.data:
+                budgets[row['id']] = {
+                    'id': row['id'],
+                    'budget_request': row['budget_request'],
+                    'budget_result': row['budget_result'],
+                    'created_at': row['created_at'],
+                    'updated_at': row['updated_at'],
+                    'custom_link': row['custom_link'],
+                    'status': row['status'],
+                    'approval_date': row.get('approval_date'),
+                    'rejection_date': row.get('rejection_date'),
+                    'rejection_comment': row.get('rejection_comment'),
+                    'resubmitted_date': row.get('resubmitted_date'),
+                    'version_history': row.get('version_history', [])
+                }
+            
+            logger.debug(f"Loaded {len(budgets)} budgets from Supabase")
+            return budgets
+        except Exception as e:
+            logger.error(f"Error loading budgets from Supabase: {e}")
+            return {}
+    
+    def _load_budgets_sqlite(self) -> Dict[str, Dict]:
+        """Carrega orçamentos do SQLite"""
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
@@ -200,14 +255,49 @@ class BudgetManager:
                     'version_history': json.loads(row['version_history'] or '[]')
                 }
             
-            logger.debug(f"Loaded {len(budgets)} budgets from database")
+            logger.debug(f"Loaded {len(budgets)} budgets from SQLite")
             return budgets
         except Exception as e:
-            logger.error(f"Error loading budgets from database: {e}")
+            logger.error(f"Error loading budgets from SQLite: {e}")
             return {}
     
     def _save_budget_to_db(self, budget_data: Dict[str, Any]):
         """Salva um orçamento específico no banco de dados"""
+        if self.use_supabase:
+            return self._save_budget_supabase(budget_data)
+        else:
+            return self._save_budget_sqlite(budget_data)
+    
+    def _save_budget_supabase(self, budget_data: Dict[str, Any]):
+        """Salva orçamento no Supabase"""
+        try:
+            # Preparar dados para Supabase (campos extras opcionais)
+            supabase_data = {
+                'id': budget_data['id'],
+                'budget_request': budget_data['budget_request'],
+                'budget_result': budget_data['budget_result'],
+                'created_at': budget_data['created_at'],
+                'updated_at': budget_data['updated_at'],
+                'custom_link': budget_data.get('custom_link'),
+                'status': budget_data.get('status', 'active')
+            }
+            
+            # Adicionar campos opcionais se existirem
+            optional_fields = ['approval_date', 'rejection_date', 'rejection_comment', 'resubmitted_date', 'version_history']
+            for field in optional_fields:
+                if field in budget_data:
+                    supabase_data[field] = budget_data[field]
+            
+            # Usar upsert para inserir ou atualizar
+            response = self.supabase.table('budgets').upsert(supabase_data).execute()
+            logger.debug(f"Budget saved to Supabase: {budget_data['id']}")
+            return response
+        except Exception as e:
+            logger.error(f"Error saving budget to Supabase: {e}")
+            raise
+    
+    def _save_budget_sqlite(self, budget_data: Dict[str, Any]):
+        """Salva orçamento no SQLite"""
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
@@ -235,9 +325,9 @@ class BudgetManager:
             
             conn.commit()
             conn.close()
-            logger.debug(f"Budget saved to database: {budget_data['id']}")
+            logger.debug(f"Budget saved to SQLite: {budget_data['id']}")
         except Exception as e:
-            logger.error(f"Error saving budget to database: {e}")
+            logger.error(f"Error saving budget to SQLite: {e}")
             raise
     
     def _generate_next_sequential_link(self) -> str:
@@ -340,6 +430,22 @@ class BudgetManager:
     
     def delete_budget(self, budget_id: str) -> bool:
         """Remove um orçamento"""
+        if self.use_supabase:
+            return self._delete_budget_supabase(budget_id)
+        else:
+            return self._delete_budget_sqlite(budget_id)
+    
+    def _delete_budget_supabase(self, budget_id: str) -> bool:
+        """Remove orçamento do Supabase"""
+        try:
+            response = self.supabase.table('budgets').delete().eq('id', budget_id).execute()
+            return len(response.data) > 0
+        except Exception as e:
+            logger.error(f"Error deleting budget from Supabase: {e}")
+            return False
+    
+    def _delete_budget_sqlite(self, budget_id: str) -> bool:
+        """Remove orçamento do SQLite"""
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
@@ -349,7 +455,7 @@ class BudgetManager:
             conn.close()
             return deleted
         except Exception as e:
-            logger.error(f"Error deleting budget: {e}")
+            logger.error(f"Error deleting budget from SQLite: {e}")
             return False
     
     def set_custom_link(self, budget_id: str, custom_link: str) -> bool:

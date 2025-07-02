@@ -33,29 +33,22 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 CREATE TABLE IF NOT EXISTS budgets (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users,
-  client_name TEXT NOT NULL,
-  client_email TEXT NOT NULL,
-  client_phone TEXT NOT NULL,
-  property_name TEXT NOT NULL,
-  state TEXT NOT NULL,
-  city TEXT NOT NULL,
-  vertices_count INTEGER NOT NULL,
-  property_area DECIMAL(10, 2) NOT NULL,
-  client_type TEXT NOT NULL,
-  is_urgent BOOLEAN DEFAULT FALSE,
-  includes_topography BOOLEAN DEFAULT FALSE,
-  includes_environmental BOOLEAN DEFAULT FALSE,
-  additional_notes TEXT,
-  subtotal DECIMAL(10, 2),
-  discount_percentage DECIMAL(5, 2),
-  discount_amount DECIMAL(10, 2),
-  urgency_fee DECIMAL(10, 2),
-  total DECIMAL(10, 2) NOT NULL,
-  status TEXT DEFAULT 'draft', -- draft, sent, approved, rejected
+  -- Dados da solicitação (budget_request)
+  budget_request JSONB NOT NULL,
+  -- Resultado do cálculo (budget_result)  
+  budget_result JSONB NOT NULL,
+  -- Campos básicos
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  sent_at TIMESTAMP WITH TIME ZONE,
-  pdf_url TEXT
+  custom_link TEXT UNIQUE,
+  status TEXT DEFAULT 'active', -- active, approved, rejected, resubmitted
+  -- Campos para aprovação/rejeição
+  approval_date TIMESTAMP WITH TIME ZONE,
+  rejection_date TIMESTAMP WITH TIME ZONE,
+  rejection_comment TEXT,
+  resubmitted_date TIMESTAMP WITH TIME ZONE,
+  -- Histórico de versões
+  version_history JSONB DEFAULT '[]'::jsonb
 );
 
 -- Tabela de análises GNSS
@@ -136,6 +129,14 @@ BEGIN
     
     IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_budgets_created_at') THEN
         CREATE INDEX idx_budgets_created_at ON budgets(created_at);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_budgets_custom_link') THEN
+        CREATE INDEX idx_budgets_custom_link ON budgets(custom_link);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_budgets_status') THEN
+        CREATE INDEX idx_budgets_status ON budgets(status);
     END IF;
     
     -- Índices para gnss_analyses
