@@ -1113,8 +1113,8 @@ CONDIÇÕES ATMOSFÉRICAS:
 
 ANÁLISE DE MULTIPATH:
 =====================
-📊 Nível Médio: {sum(multipath_indicators)/len(multipath_indicators):.3f if multipath_indicators else 0:.3f}
-📈 Pico Máximo: {max(multipath_indicators) if multipath_indicators else 0:.3f}
+📊 Nível Médio: {(sum(multipath_indicators)/len(multipath_indicators) if multipath_indicators else 0):.3f}
+📈 Pico Máximo: {(max(multipath_indicators) if multipath_indicators else 0):.3f}
 🔍 Avaliação: {'Baixo' if not multipath_indicators or max(multipath_indicators) < 0.2 else 'Moderado' if max(multipath_indicators) < 0.4 else 'Alto'}
 
 CYCLE SLIPS DETECTADOS:
