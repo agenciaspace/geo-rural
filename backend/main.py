@@ -1735,102 +1735,6 @@ async def generate_gnss_report_pdf(gnss_data: dict):
         logger.error(f"Dados recebidos: {gnss_data}")
         raise HTTPException(status_code=500, detail=f"Erro na geração de PDF: {str(e)}")
 
-@app.get("/api/info")
-async def api_info():
-    """Endpoint com informações da API"""
-    try:
-        # Test budget manager
-        budget_status = "ok"
-        budget_count = 0
-        storage_path = "unknown"
-        
-        try:
-            budget_count = len(budget_manager._load_budgets())
-            storage_path = str(budget_manager.budgets_file)
-        except Exception as e:
-            budget_status = f"error: {str(e)}"
-        
-        return {
-            "message": "Precizu API",
-            "version": "1.0.0",
-            "status": "running",
-            "budget_manager": {
-                "status": budget_status,
-                "storage_path": storage_path,
-                "budget_count": budget_count
-            },
-            "endpoints": [
-                "/api/upload-gnss - Upload e análise de arquivos GNSS",
-                "/api/calculate-budget - Calcular orçamento",
-                "/api/generate-proposal-pdf - Gerar PDF da proposta",
-                "/api/budgets - Listar orçamentos salvos",
-                "/api/budgets/{id} - Buscar orçamento por ID",
-                "/api/budgets/link/{custom_link} - Acessar por link personalizado"
-            ]
-        }
-    except Exception as e:
-        logger.error(f"Error in api_info: {e}")
-        return {
-            "message": "Precizu API", 
-            "version": "1.0.0",
-            "status": "error",
-            "error": str(e)
-        }
-
-@app.get("/", response_class=HTMLResponse)
-async def serve_react_app():
-    """Serve a aplicação React"""
-    index_path = os.path.join(BUILD_DIR, "index.html")
-    
-    if os.path.exists(index_path):
-        with open(index_path, "r", encoding="utf-8") as f:
-            return HTMLResponse(f.read())
-    else:
-        return HTMLResponse("""
-        <html>
-            <head><title>Precizu</title></head>
-            <body>
-                <h1>🌱 Precizu</h1>
-                <p>Frontend React não encontrado. Execute o build primeiro:</p>
-                <code>npm run build</code>
-                <br><br>
-                <p>Ou acesse a API em: <a href="/docs">/docs</a></p>
-            </body>
-        </html>
-        """)
-
-# Catch-all route para Single Page Application (SPA)
-@app.get("/{path:path}", response_class=HTMLResponse)
-async def serve_spa(path: str):
-    """Serve o React App para todas as rotas não-API"""
-    # Se é uma rota da API, não interceptar
-    if path.startswith("api/") or path.startswith("docs") or path.startswith("openapi.json"):
-        raise HTTPException(status_code=404, detail="Not found")
-    
-    # Serve index.html para todas as outras rotas (SPA routing)
-    index_path = os.path.join(BUILD_DIR, "index.html")
-    
-    if os.path.exists(index_path):
-        with open(index_path, "r", encoding="utf-8") as f:
-            return HTMLResponse(f.read())
-    else:
-        raise HTTPException(status_code=404, detail="Frontend not built")
-
-# Lista dos endpoints disponíveis
-@app.get("/api/endpoints")
-async def api_endpoints():
-    return {
-        "endpoints": [
-            "/api/upload-gnss - Upload e análise de arquivos GNSS",
-            "/api/calculate-budget - Calcular orçamento",
-            "/api/generate-proposal-pdf - Gerar PDF da proposta",
-            "/api/generate-gnss-report-pdf - Gerar PDF do relatório técnico GNSS",
-            "/api/budgets - Gerenciar orçamentos salvos (CRUD)",
-            "/api/budgets/{budget_id} - Operações específicas por ID",
-            "/api/budgets/link/{custom_link} - Acessar por link personalizado"
-        ]
-    }
-
 # ===================== BUDGET MANAGEMENT ENDPOINTS =====================
 
 @app.post("/api/budgets/save")
@@ -1887,7 +1791,9 @@ async def save_budget(request: BudgetRequestModel, custom_link: Optional[str] = 
 async def list_budgets(limit: int = 50, status: str = "active"):
     """Lista orçamentos salvos"""
     try:
+        logger.info(f"Listing budgets with limit={limit}, status={status}")
         budgets = budget_manager.list_budgets(limit=limit, status=status)
+        logger.info(f"Successfully returned {len(budgets)} budgets")
         return {
             "success": True,
             "budgets": budgets,
@@ -1895,24 +1801,6 @@ async def list_budgets(limit: int = 50, status: str = "active"):
         }
     except Exception as e:
         logger.error(f"Erro ao listar orçamentos: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
-
-@app.get("/api/budgets/{budget_id}")
-async def get_budget(budget_id: str):
-    """Recupera um orçamento específico pelo ID"""
-    try:
-        budget = budget_manager.get_budget(budget_id)
-        if not budget:
-            raise HTTPException(status_code=404, detail="Orçamento não encontrado")
-        
-        return {
-            "success": True,
-            "budget": budget
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Erro ao buscar orçamento: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 @app.get("/api/budgets/link/{custom_link}")
@@ -1931,6 +1819,24 @@ async def get_budget_by_link(custom_link: str):
         raise
     except Exception as e:
         logger.error(f"Erro ao buscar orçamento por link: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+@app.get("/api/budgets/{budget_id}")
+async def get_budget(budget_id: str):
+    """Recupera um orçamento específico pelo ID"""
+    try:
+        budget = budget_manager.get_budget(budget_id)
+        if not budget:
+            raise HTTPException(status_code=404, detail="Orçamento não encontrado")
+        
+        return {
+            "success": True,
+            "budget": budget
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao buscar orçamento: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 @app.put("/api/budgets/{budget_id}")
@@ -2047,6 +1953,103 @@ async def delete_budget(budget_id: str):
     except Exception as e:
         logger.error(f"Erro ao remover orçamento: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+@app.get("/api/info")
+async def api_info():
+    """Endpoint com informações da API"""
+    try:
+        # Test budget manager
+        budget_status = "ok"
+        budget_count = 0
+        storage_path = "unknown"
+        
+        try:
+            budget_count = len(budget_manager._load_budgets())
+            storage_path = str(budget_manager.budgets_file)
+        except Exception as e:
+            budget_status = f"error: {str(e)}"
+        
+        return {
+            "message": "Precizu API",
+            "version": "1.0.0",
+            "status": "running",
+            "budget_manager": {
+                "status": budget_status,
+                "storage_path": storage_path,
+                "budget_count": budget_count
+            },
+            "endpoints": [
+                "/api/upload-gnss - Upload e análise de arquivos GNSS",
+                "/api/calculate-budget - Calcular orçamento",
+                "/api/generate-proposal-pdf - Gerar PDF da proposta",
+                "/api/budgets - Listar orçamentos salvos",
+                "/api/budgets/{id} - Buscar orçamento por ID",
+                "/api/budgets/link/{custom_link} - Acessar por link personalizado"
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Error in api_info: {e}")
+        return {
+            "message": "Precizu API", 
+            "version": "1.0.0",
+            "status": "error",
+            "error": str(e)
+        }
+
+@app.get("/", response_class=HTMLResponse)
+async def serve_react_app():
+    """Serve a aplicação React"""
+    index_path = os.path.join(BUILD_DIR, "index.html")
+    
+    if os.path.exists(index_path):
+        with open(index_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(f.read())
+    else:
+        return HTMLResponse("""
+        <html>
+            <head><title>Precizu</title></head>
+            <body>
+                <h1>🌱 Precizu</h1>
+                <p>Frontend React não encontrado. Execute o build primeiro:</p>
+                <code>npm run build</code>
+                <br><br>
+                <p>Ou acesse a API em: <a href="/docs">/docs</a></p>
+            </body>
+        </html>
+        """)
+
+# Catch-all route para Single Page Application (SPA)
+@app.get("/{path:path}", response_class=HTMLResponse)
+async def serve_spa(path: str):
+    """Serve o React App para todas as rotas não-API"""
+    # Se é uma rota da API, não interceptar
+    if path.startswith("api/") or path.startswith("docs") or path.startswith("openapi.json"):
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    # Serve index.html para todas as outras rotas (SPA routing)
+    index_path = os.path.join(BUILD_DIR, "index.html")
+    
+    if os.path.exists(index_path):
+        with open(index_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(f.read())
+    else:
+        raise HTTPException(status_code=404, detail="Frontend not built")
+
+# Lista dos endpoints disponíveis
+@app.get("/api/endpoints")
+async def api_endpoints():
+    return {
+        "endpoints": [
+            "/api/upload-gnss - Upload e análise de arquivos GNSS",
+            "/api/calculate-budget - Calcular orçamento",
+            "/api/generate-proposal-pdf - Gerar PDF da proposta",
+            "/api/generate-gnss-report-pdf - Gerar PDF do relatório técnico GNSS",
+            "/api/budgets - Gerenciar orçamentos salvos (CRUD)",
+            "/api/budgets/{budget_id} - Operações específicas por ID",
+            "/api/budgets/link/{custom_link} - Acessar por link personalizado"
+        ]
+    }
+
 
 if __name__ == "__main__":
     import uvicorn
