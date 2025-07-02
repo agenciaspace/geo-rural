@@ -11,6 +11,7 @@ import tempfile
 import zipfile
 import json
 import uuid
+import sqlite3
 from datetime import datetime as dt, timezone, timedelta
 from pathlib import Path
 from typing import Dict, Any, Tuple, Optional, List
@@ -128,43 +129,116 @@ class BudgetManager:
             self.storage_dir.mkdir(exist_ok=True)
             logger.info(f"Using fallback storage directory: {self.storage_dir.absolute()}")
         
-        self.budgets_file = self.storage_dir / "budgets.json"
-        self._ensure_storage()
+        self.db_file = self.storage_dir / "budgets.db"
+        self._ensure_database()
     
-    def _ensure_storage(self):
-        """Garante que o arquivo de storage existe"""
+    def _ensure_database(self):
+        """Garante que o banco de dados SQLite existe e está configurado"""
         try:
-            if not self.budgets_file.exists():
-                with open(self.budgets_file, 'w') as f:
-                    json.dump({}, f)
-                logger.info(f"Created budgets storage file: {self.budgets_file}")
-            else:
-                logger.info(f"Budget storage file exists: {self.budgets_file}")
+            conn = sqlite3.connect(self.db_file)
+            cursor = conn.cursor()
+            
+            # Criar tabela de orçamentos se não existir
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS budgets (
+                    id TEXT PRIMARY KEY,
+                    budget_request TEXT NOT NULL,
+                    budget_result TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    custom_link TEXT UNIQUE,
+                    status TEXT DEFAULT 'active',
+                    approval_date TEXT,
+                    rejection_date TEXT,
+                    rejection_comment TEXT,
+                    resubmitted_date TEXT,
+                    version_history TEXT DEFAULT '[]'
+                )
+            ''')
+            
+            # Criar índices para otimizar consultas
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_custom_link ON budgets(custom_link)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_status ON budgets(status)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_created_at ON budgets(created_at)')
+            
+            conn.commit()
+            conn.close()
+            logger.info(f"SQLite database initialized: {self.db_file}")
         except Exception as e:
-            logger.error(f"Error ensuring storage: {e}")
+            logger.error(f"Error initializing database: {e}")
             raise
     
+    def _get_connection(self):
+        """Retorna uma conexão com o banco de dados"""
+        conn = sqlite3.connect(self.db_file)
+        conn.row_factory = sqlite3.Row  # Permite acesso por nome da coluna
+        return conn
+    
     def _load_budgets(self) -> Dict[str, Dict]:
-        """Carrega todos os orçamentos do storage"""
+        """Carrega todos os orçamentos do banco de dados"""
         try:
-            with open(self.budgets_file, 'r') as f:
-                data = json.load(f)
-                logger.debug(f"Loaded {len(data)} budgets from storage")
-                return data
-        except FileNotFoundError:
-            logger.warning(f"Budgets file not found: {self.budgets_file}")
-            return {}
-        except json.JSONDecodeError as e:
-            logger.error(f"Invalid JSON in budgets file: {e}")
-            return {}
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM budgets ORDER BY created_at DESC')
+            rows = cursor.fetchall()
+            conn.close()
+            
+            budgets = {}
+            for row in rows:
+                budgets[row['id']] = {
+                    'id': row['id'],
+                    'budget_request': json.loads(row['budget_request']),
+                    'budget_result': json.loads(row['budget_result']),
+                    'created_at': row['created_at'],
+                    'updated_at': row['updated_at'],
+                    'custom_link': row['custom_link'],
+                    'status': row['status'],
+                    'approval_date': row['approval_date'],
+                    'rejection_date': row['rejection_date'],
+                    'rejection_comment': row['rejection_comment'],
+                    'resubmitted_date': row['resubmitted_date'],
+                    'version_history': json.loads(row['version_history'] or '[]')
+                }
+            
+            logger.debug(f"Loaded {len(budgets)} budgets from database")
+            return budgets
         except Exception as e:
-            logger.error(f"Error loading budgets: {e}")
+            logger.error(f"Error loading budgets from database: {e}")
             return {}
     
-    def _save_budgets(self, budgets: Dict[str, Dict]):
-        """Salva todos os orçamentos no storage"""
-        with open(self.budgets_file, 'w') as f:
-            json.dump(budgets, f, indent=2, ensure_ascii=False)
+    def _save_budget_to_db(self, budget_data: Dict[str, Any]):
+        """Salva um orçamento específico no banco de dados"""
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                INSERT OR REPLACE INTO budgets (
+                    id, budget_request, budget_result, created_at, updated_at,
+                    custom_link, status, approval_date, rejection_date, 
+                    rejection_comment, resubmitted_date, version_history
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                budget_data['id'],
+                json.dumps(budget_data['budget_request'], ensure_ascii=False),
+                json.dumps(budget_data['budget_result'], ensure_ascii=False),
+                budget_data['created_at'],
+                budget_data['updated_at'],
+                budget_data.get('custom_link'),
+                budget_data.get('status', 'active'),
+                budget_data.get('approval_date'),
+                budget_data.get('rejection_date'),
+                budget_data.get('rejection_comment'),
+                budget_data.get('resubmitted_date'),
+                json.dumps(budget_data.get('version_history', []), ensure_ascii=False)
+            ))
+            
+            conn.commit()
+            conn.close()
+            logger.debug(f"Budget saved to database: {budget_data['id']}")
+        except Exception as e:
+            logger.error(f"Error saving budget to database: {e}")
+            raise
     
     def _generate_next_sequential_link(self) -> str:
         """Gera o próximo link sequencial automaticamente"""
@@ -195,19 +269,17 @@ class BudgetManager:
             custom_link = self._generate_next_sequential_link()
             logger.info(f"Generated automatic sequential link: {custom_link}")
         
-        saved_budget = SavedBudget(
-            id=budget_id,
-            budget_request=budget_request,
-            budget_result=budget_result,
-            created_at=now,
-            updated_at=now,
-            custom_link=custom_link,
-            status="active"
-        )
+        budget_data = {
+            'id': budget_id,
+            'budget_request': budget_request,
+            'budget_result': budget_result,
+            'created_at': now,
+            'updated_at': now,
+            'custom_link': custom_link,
+            'status': 'active'
+        }
         
-        budgets = self._load_budgets()
-        budgets[budget_id] = asdict(saved_budget)
-        self._save_budgets(budgets)
+        self._save_budget_to_db(budget_data)
         
         logger.info(f"Budget created with ID: {budget_id}, Link: {custom_link}")
         return budget_id
@@ -231,25 +303,30 @@ class BudgetManager:
         if budget_id not in budgets:
             return False
         
-        budgets[budget_id]['budget_request'] = budget_request
-        budgets[budget_id]['budget_result'] = budget_result
-        budgets[budget_id]['updated_at'] = dt.now().isoformat()
+        budget_data = budgets[budget_id].copy()
+        budget_data['budget_request'] = budget_request
+        budget_data['budget_result'] = budget_result
+        budget_data['updated_at'] = dt.now().isoformat()
         
-        self._save_budgets(budgets)
+        self._save_budget_to_db(budget_data)
         return True
     
-    def list_budgets(self, limit: int = 50, status: str = "active") -> List[Dict[str, Any]]:
+    def list_budgets(self, limit: int = 50, status: str = None) -> List[Dict[str, Any]]:
         """Lista orçamentos com filtros"""
         try:
             budgets = self._load_budgets()
-            logger.debug(f"Filtering budgets by status: {status}")
             
-            filtered_budgets = [
-                budget for budget in budgets.values() 
-                if budget.get('status') == status
-            ]
-            
-            logger.info(f"Found {len(filtered_budgets)} budgets with status '{status}'")
+            if status:
+                logger.debug(f"Filtering budgets by status: {status}")
+                filtered_budgets = [
+                    budget for budget in budgets.values() 
+                    if budget.get('status') == status
+                ]
+                logger.info(f"Found {len(filtered_budgets)} budgets with status '{status}'")
+            else:
+                # Se não especificar status, retorna todos
+                filtered_budgets = list(budgets.values())
+                logger.info(f"Found {len(filtered_budgets)} total budgets")
             
             # Ordena por data de criação (mais recente primeiro)
             filtered_budgets.sort(key=lambda x: x.get('created_at', ''), reverse=True)
@@ -263,13 +340,17 @@ class BudgetManager:
     
     def delete_budget(self, budget_id: str) -> bool:
         """Remove um orçamento"""
-        budgets = self._load_budgets()
-        if budget_id not in budgets:
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM budgets WHERE id = ?', (budget_id,))
+            deleted = cursor.rowcount > 0
+            conn.commit()
+            conn.close()
+            return deleted
+        except Exception as e:
+            logger.error(f"Error deleting budget: {e}")
             return False
-        
-        del budgets[budget_id]
-        self._save_budgets(budgets)
-        return True
     
     def set_custom_link(self, budget_id: str, custom_link: str) -> bool:
         """Define um link personalizado para o orçamento"""
@@ -281,10 +362,11 @@ class BudgetManager:
         if self.get_budget_by_link(custom_link):
             return False
         
-        budgets[budget_id]['custom_link'] = custom_link
-        budgets[budget_id]['updated_at'] = dt.now().isoformat()
+        budget_data = budgets[budget_id].copy()
+        budget_data['custom_link'] = custom_link
+        budget_data['updated_at'] = dt.now().isoformat()
         
-        self._save_budgets(budgets)
+        self._save_budget_to_db(budget_data)
         return True
 
     def approve_budget_by_link(self, custom_link: str) -> bool:
@@ -292,10 +374,11 @@ class BudgetManager:
         budgets = self._load_budgets()
         for budget_id, budget in budgets.items():
             if budget.get('custom_link') == custom_link:
-                budget['status'] = 'approved'
-                budget['approval_date'] = dt.now().isoformat()
-                budget['updated_at'] = dt.now().isoformat()
-                self._save_budgets(budgets)
+                budget_data = budget.copy()
+                budget_data['status'] = 'approved'
+                budget_data['approval_date'] = dt.now().isoformat()
+                budget_data['updated_at'] = dt.now().isoformat()
+                self._save_budget_to_db(budget_data)
                 logger.info(f"Budget approved via link: {custom_link}")
                 return True
         return False
@@ -305,11 +388,12 @@ class BudgetManager:
         budgets = self._load_budgets()
         for budget_id, budget in budgets.items():
             if budget.get('custom_link') == custom_link:
-                budget['status'] = 'rejected'
-                budget['rejection_date'] = dt.now().isoformat()
-                budget['rejection_comment'] = rejection_comment
-                budget['updated_at'] = dt.now().isoformat()
-                self._save_budgets(budgets)
+                budget_data = budget.copy()
+                budget_data['status'] = 'rejected'
+                budget_data['rejection_date'] = dt.now().isoformat()
+                budget_data['rejection_comment'] = rejection_comment
+                budget_data['updated_at'] = dt.now().isoformat()
+                self._save_budget_to_db(budget_data)
                 logger.info(f"Budget rejected via link: {custom_link}, comment: {rejection_comment}")
                 return True
         return False
@@ -323,32 +407,34 @@ class BudgetManager:
                 if budget.get('status') != 'rejected':
                     return False
                 
-                # Salva versão anterior no histórico
-                if 'version_history' not in budget:
-                    budget['version_history'] = []
+                budget_data = budget.copy()
                 
-                budget['version_history'].append({
-                    'version': len(budget['version_history']) + 1,
-                    'budget_request': budget['budget_request'].copy(),
-                    'budget_result': budget['budget_result'].copy(),
-                    'status': budget['status'],
-                    'rejection_date': budget.get('rejection_date'),
-                    'rejection_comment': budget.get('rejection_comment'),
-                    'updated_at': budget['updated_at']
+                # Salva versão anterior no histórico
+                if 'version_history' not in budget_data:
+                    budget_data['version_history'] = []
+                
+                budget_data['version_history'].append({
+                    'version': len(budget_data['version_history']) + 1,
+                    'budget_request': budget_data['budget_request'].copy(),
+                    'budget_result': budget_data['budget_result'].copy(),
+                    'status': budget_data['status'],
+                    'rejection_date': budget_data.get('rejection_date'),
+                    'rejection_comment': budget_data.get('rejection_comment'),
+                    'updated_at': budget_data['updated_at']
                 })
                 
                 # Atualiza com nova versão
-                budget['budget_request'] = updated_budget_request
-                budget['budget_result'] = updated_budget_result
-                budget['status'] = 'resubmitted'
-                budget['resubmitted_date'] = dt.now().isoformat()
-                budget['updated_at'] = dt.now().isoformat()
+                budget_data['budget_request'] = updated_budget_request
+                budget_data['budget_result'] = updated_budget_result
+                budget_data['status'] = 'resubmitted'
+                budget_data['resubmitted_date'] = dt.now().isoformat()
+                budget_data['updated_at'] = dt.now().isoformat()
                 
                 # Remove dados de rejeição anterior
-                budget.pop('rejection_date', None)
-                budget.pop('rejection_comment', None)
+                budget_data.pop('rejection_date', None)
+                budget_data.pop('rejection_comment', None)
                 
-                self._save_budgets(budgets)
+                self._save_budget_to_db(budget_data)
                 logger.info(f"Budget resubmitted via link: {custom_link}")
                 return True
         return False
@@ -1899,7 +1985,7 @@ async def save_budget(request: BudgetRequestModel, custom_link: Optional[str] = 
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 @app.get("/api/budgets")
-async def list_budgets(limit: int = 50, status: str = "active"):
+async def list_budgets(limit: int = 50, status: str = None):
     """Lista orçamentos salvos"""
     try:
         logger.info(f"Listing budgets with limit={limit}, status={status}")
