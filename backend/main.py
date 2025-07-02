@@ -1638,11 +1638,16 @@ async def calculate_budget(request: BudgetRequestModel):
         # Calcula orçamento
         if budget_calculator:
             result = budget_calculator.calculate_budget(budget_request)
+            logger.info(f"Budget calculated successfully: {result.get('total_price', 'unknown')} for client {budget_request.client_name}")
         else:
             # Fallback simples
+            logger.warning("Budget calculator not available, using fallback")
             result = {
                 "success": True,
-                "total_cost": 5000.0,
+                "total_price": 5000.0,
+                "breakdown": [{"item": "Serviço de georreferenciamento (estimativa)", "value": 5000.0}],
+                "estimated_days": 15,
+                "generated_at": dt.now().isoformat(),
                 "message": "Orçamento calculado (modo simplificado)"
             }
         

@@ -87,6 +87,13 @@ const BudgetHub = () => {
     setError(null);
     setSuccess(null);
 
+    // Validação adicional
+    if (!isFormValid()) {
+      setError('Por favor, preencha todos os campos obrigatórios');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       // Primeiro calcula o orçamento
       const calculateResponse = await fetch('/api/calculate-budget', {
@@ -98,6 +105,11 @@ const BudgetHub = () => {
           property_area: parseFloat(formData.property_area)
         })
       });
+
+      if (!calculateResponse.ok) {
+        const errorData = await calculateResponse.json();
+        throw new Error(errorData.detail || `Erro HTTP: ${calculateResponse.status}`);
+      }
 
       const budgetResult = await calculateResponse.json();
 
@@ -149,6 +161,11 @@ const BudgetHub = () => {
           property_area: parseFloat(formData.property_area)
         })
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `Erro HTTP: ${response.status}`);
+      }
 
       const result = await response.json();
 

@@ -123,6 +123,7 @@ class BudgetCalculator:
             base_days = max(5, base_days // 2)
         
         return {
+            "success": True,
             "total_price": round(total, 2),
             "breakdown": breakdown,
             "estimated_days": base_days,
