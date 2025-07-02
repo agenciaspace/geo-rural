@@ -69,6 +69,14 @@ class PDFGenerator:
     def generate_gnss_report_pdf(self, gnss_data: Dict[str, Any], filename: Optional[str] = None) -> str:
         """Gera PDF completo do relatório técnico geodésico GNSS"""
         
+        # Logging para debug
+        print(f"🔍 PDF Generator - Dados recebidos: {type(gnss_data)}")
+        print(f"🔍 PDF Generator - Keys disponíveis: {list(gnss_data.keys()) if isinstance(gnss_data, dict) else 'N/A'}")
+        
+        # Validação defensiva
+        if not gnss_data or not isinstance(gnss_data, dict):
+            raise ValueError(f"Dados inválidos para PDF: {type(gnss_data)}")
+        
         if not filename:
             timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
             filename = f"relatorio_geodesico_gnss_{timestamp}.pdf"
@@ -90,30 +98,43 @@ class PDFGenerator:
         # Constrói conteúdo do PDF
         story = []
         file_info = gnss_data.get('file_info', {})
+        print(f"🔍 PDF Generator - file_info keys: {list(file_info.keys()) if isinstance(file_info, dict) else 'N/A'}")
         
         # Título principal
         story.append(Paragraph("RELATÓRIO TÉCNICO GEODÉSICO GNSS", self.styles['TitleStyle']))
         story.append(Paragraph("ANÁLISE PROFISSIONAL DE DADOS RINEX", self.styles['SubtitleStyle']))
         story.append(Spacer(1, 20))
         
-        # Informações gerais
+        # Informações gerais com valores padrão seguros
         analysis_date = dt.now().strftime("%d/%m/%Y às %H:%M")
+        quality_status = file_info.get('quality_status', 'SEM ANÁLISE')
+        quality_score = file_info.get('quality_score', 0)
+        incra_compliant = file_info.get('incra_compliant', False)
+        
         story.append(Paragraph(f"<b>Data da Análise:</b> {analysis_date} (GMT-3)", self.styles['BodyStyle']))
-        story.append(Paragraph(f"<b>Classificação Geral:</b> {file_info.get('quality_status', 'N/A')}", self.styles['BodyStyle']))
-        story.append(Paragraph(f"<b>Pontuação Técnica:</b> {file_info.get('quality_score', 'N/A')}/100 pontos", self.styles['BodyStyle']))
-        story.append(Paragraph(f"<b>Status INCRA:</b> {'✅ APROVADO' if file_info.get('incra_compliant') else '❌ NECESSITA REVISÃO'}", self.styles['BodyStyle']))
+        story.append(Paragraph(f"<b>Classificação Geral:</b> {quality_status}", self.styles['BodyStyle']))
+        story.append(Paragraph(f"<b>Pontuação Técnica:</b> {quality_score}/100 pontos", self.styles['BodyStyle']))
+        story.append(Paragraph(f"<b>Status INCRA:</b> {'✅ APROVADO' if incra_compliant else '❌ NECESSITA REVISÃO'}", self.styles['BodyStyle']))
         story.append(Spacer(1, 20))
         
-        # Seção 1: Dados Gerais da Sessão
+        # Seção 1: Dados Gerais da Sessão com valores padrão seguros
         story.append(Paragraph("1. DADOS GERAIS DA SESSÃO", self.styles['SubtitleStyle']))
+        
+        # Extração segura de dados
+        satellites_count = file_info.get('satellites_count', 0)
+        duration_hours = file_info.get('duration_hours', 0)
+        epochs_processed = file_info.get('epochs_processed', 0)
+        satellite_systems = file_info.get('satellite_systems', {})
+        technical_analysis = file_info.get('technical_analysis', {})
+        
         session_data = [
             ['Parâmetro', 'Valor'],
-            ['Satélites Observados', str(file_info.get('satellites_count', 'N/A'))],
-            ['Duração da Sessão', f"{file_info.get('duration_hours', 'N/A')} horas"],
-            ['Épocas Processadas', f"{file_info.get('epochs_processed', 'N/A'):,}"],
-            ['Sistemas Ativos', str(len(file_info.get('satellite_systems', {})))],
-            ['Intervalo de Observação', f"{file_info.get('technical_analysis', {}).get('observation_interval', 'N/A')}s"],
-            ['Continuidade dos Dados', file_info.get('technical_analysis', {}).get('data_continuity', 'N/A')],
+            ['Satélites Observados', str(satellites_count)],
+            ['Duração da Sessão', f"{duration_hours} horas"],
+            ['Épocas Processadas', f"{epochs_processed:,}" if epochs_processed else "0"],
+            ['Sistemas Ativos', str(len(satellite_systems)) if satellite_systems else "0"],
+            ['Intervalo de Observação', f"{technical_analysis.get('observation_interval', 0)}s"],
+            ['Continuidade dos Dados', technical_analysis.get('data_continuity', 'N/A')],
         ]
         
         session_table = Table(session_data, colWidths=[8*cm, 8*cm])
@@ -132,6 +153,9 @@ class PDFGenerator:
         # Seção 2: Equipamentos Utilizados
         story.append(Paragraph("2. EQUIPAMENTOS UTILIZADOS", self.styles['SubtitleStyle']))
         equipment = file_info.get('equipment', {})
+        if not equipment or not isinstance(equipment, dict):
+            equipment = {}
+            
         equipment_data = [
             ['Equipamento', 'Especificação'],
             ['Receptor GNSS', equipment.get('receiver', 'Não identificado')],
@@ -154,12 +178,20 @@ class PDFGenerator:
         # Seção 3: Análise DOP (Diluição de Precisão)
         story.append(Paragraph("3. ANÁLISE DOP (DILUIÇÃO DE PRECISÃO)", self.styles['SubtitleStyle']))
         dop_analysis = file_info.get('dop_analysis', {})
+        if not dop_analysis or not isinstance(dop_analysis, dict):
+            dop_analysis = {}
+            
+        pdop = dop_analysis.get('PDOP', 'N/A')
+        hdop = dop_analysis.get('HDOP', 'N/A')
+        vdop = dop_analysis.get('VDOP', 'N/A')
+        gdop = dop_analysis.get('GDOP', 'N/A')
+        
         dop_data = [
             ['Tipo DOP', 'Valor', 'Avaliação'],
-            ['PDOP (Position)', str(dop_analysis.get('PDOP', 'N/A')), self._evaluate_dop(dop_analysis.get('PDOP', 999), 'PDOP')],
-            ['HDOP (Horizontal)', str(dop_analysis.get('HDOP', 'N/A')), self._evaluate_dop(dop_analysis.get('HDOP', 999), 'HDOP')],
-            ['VDOP (Vertical)', str(dop_analysis.get('VDOP', 'N/A')), self._evaluate_dop(dop_analysis.get('VDOP', 999), 'VDOP')],
-            ['GDOP (Geometric)', str(dop_analysis.get('GDOP', 'N/A')), self._evaluate_dop(dop_analysis.get('GDOP', 999), 'GDOP')],
+            ['PDOP (Position)', str(pdop), self._evaluate_dop(pdop if isinstance(pdop, (int, float)) else 999, 'PDOP')],
+            ['HDOP (Horizontal)', str(hdop), self._evaluate_dop(hdop if isinstance(hdop, (int, float)) else 999, 'HDOP')],
+            ['VDOP (Vertical)', str(vdop), self._evaluate_dop(vdop if isinstance(vdop, (int, float)) else 999, 'VDOP')],
+            ['GDOP (Geometric)', str(gdop), self._evaluate_dop(gdop if isinstance(gdop, (int, float)) else 999, 'GDOP')],
         ]
         
         dop_table = Table(dop_data, colWidths=[5*cm, 3*cm, 8*cm])
@@ -178,13 +210,23 @@ class PDFGenerator:
         # Seção 4: Estatísticas de Posicionamento
         story.append(Paragraph("4. ESTATÍSTICAS DE POSICIONAMENTO", self.styles['SubtitleStyle']))
         positioning_stats = file_info.get('positioning_statistics', {})
+        if not positioning_stats or not isinstance(positioning_stats, dict):
+            positioning_stats = {}
+            
+        horizontal_rms = positioning_stats.get('horizontal_rms', 'N/A')
+        vertical_rms = positioning_stats.get('vertical_rms', 'N/A')
+        position_rms = positioning_stats.get('position_rms', 'N/A')
+        estimated_accuracy = positioning_stats.get('estimated_accuracy', 'N/A')
+        
+        # Validação para INCRA
+        horizontal_status = '✅ APROVADO' if isinstance(horizontal_rms, (int, float)) and horizontal_rms < 0.5 else '❌ FORA DO LIMITE'
+        
         positioning_data = [
             ['Parâmetro', 'Valor', 'Status INCRA'],
-            ['Precisão Horizontal (RMS)', f"{positioning_stats.get('horizontal_rms', 'N/A')}m", 
-             '✅ APROVADO' if positioning_stats.get('horizontal_rms', 999) < 0.5 else '❌ FORA DO LIMITE'],
-            ['Precisão Vertical (RMS)', f"{positioning_stats.get('vertical_rms', 'N/A')}m", 'Referência'],
-            ['Precisão Posicional (3D)', f"{positioning_stats.get('position_rms', 'N/A')}m", 'Referência'],
-            ['Acurácia Estimada (95%)', positioning_stats.get('estimated_accuracy', 'N/A'), 'Intervalo de Confiança'],
+            ['Precisão Horizontal (RMS)', f"{horizontal_rms}m" if horizontal_rms != 'N/A' else horizontal_rms, horizontal_status],
+            ['Precisão Vertical (RMS)', f"{vertical_rms}m" if vertical_rms != 'N/A' else vertical_rms, 'Referência'],
+            ['Precisão Posicional (3D)', f"{position_rms}m" if position_rms != 'N/A' else position_rms, 'Referência'],
+            ['Acurácia Estimada (95%)', str(estimated_accuracy), 'Intervalo de Confiança'],
         ]
         
         positioning_table = Table(positioning_data, colWidths=[6*cm, 4*cm, 6*cm])
@@ -203,12 +245,20 @@ class PDFGenerator:
         # Seção 5: Condições Atmosféricas
         story.append(Paragraph("5. CONDIÇÕES ATMOSFÉRICAS", self.styles['SubtitleStyle']))
         atmospheric_conditions = file_info.get('atmospheric_conditions', {})
+        if not atmospheric_conditions or not isinstance(atmospheric_conditions, dict):
+            atmospheric_conditions = {}
+            
+        ionospheric_activity = atmospheric_conditions.get('ionospheric_activity', 'N/A')
+        ionospheric_delay = atmospheric_conditions.get('ionospheric_delay_rms', 'N/A')
+        tropospheric_delay = atmospheric_conditions.get('tropospheric_delay_rms', 'N/A')
+        atmospheric_stability = atmospheric_conditions.get('atmospheric_stability', 'N/A')
+        
         atmospheric_data = [
             ['Parâmetro', 'Valor', 'Avaliação'],
-            ['Atividade Ionosférica', atmospheric_conditions.get('ionospheric_activity', 'N/A'), 'Monitoramento'],
-            ['Atraso Ionosférico (RMS)', f"{atmospheric_conditions.get('ionospheric_delay_rms', 'N/A')} TECU", 'Correção Aplicada'],
-            ['Atraso Troposférico (RMS)', f"{atmospheric_conditions.get('tropospheric_delay_rms', 'N/A')}m", 'Correção Aplicada'],
-            ['Estabilidade Atmosférica', atmospheric_conditions.get('atmospheric_stability', 'N/A'), 'Condições Gerais'],
+            ['Atividade Ionosférica', str(ionospheric_activity), 'Monitoramento'],
+            ['Atraso Ionosférico (RMS)', f"{ionospheric_delay} TECU" if ionospheric_delay != 'N/A' else ionospheric_delay, 'Correção Aplicada'],
+            ['Atraso Troposférico (RMS)', f"{tropospheric_delay}m" if tropospheric_delay != 'N/A' else tropospheric_delay, 'Correção Aplicada'],
+            ['Estabilidade Atmosférica', str(atmospheric_stability), 'Condições Gerais'],
         ]
         
         atmospheric_table = Table(atmospheric_data, colWidths=[6*cm, 4*cm, 6*cm])
@@ -229,12 +279,24 @@ class PDFGenerator:
         multipath_analysis = file_info.get('multipath_analysis', {})
         cycle_slip_analysis = file_info.get('cycle_slip_analysis', {})
         
+        if not multipath_analysis or not isinstance(multipath_analysis, dict):
+            multipath_analysis = {}
+        if not cycle_slip_analysis or not isinstance(cycle_slip_analysis, dict):
+            cycle_slip_analysis = {}
+            
+        multipath_avg = multipath_analysis.get('average_level', 'N/A')
+        multipath_peak = multipath_analysis.get('peak_level', 'N/A')
+        multipath_assessment = multipath_analysis.get('assessment', 'N/A')
+        cycle_slips_total = cycle_slip_analysis.get('total_detected', 'N/A')
+        cycle_slips_rate = cycle_slip_analysis.get('rate_percentage', 'N/A')
+        cycle_slips_assessment = cycle_slip_analysis.get('assessment', 'N/A')
+        
         signal_data = [
             ['Parâmetro', 'Valor', 'Status'],
-            ['Multipath Médio', f"{multipath_analysis.get('average_level', 'N/A')}", multipath_analysis.get('assessment', 'N/A')],
-            ['Pico de Multipath', f"{multipath_analysis.get('peak_level', 'N/A')}", 'Máximo Detectado'],
-            ['Cycle Slips Detectados', str(cycle_slip_analysis.get('total_detected', 'N/A')), cycle_slip_analysis.get('assessment', 'N/A')],
-            ['Taxa de Cycle Slips', f"{cycle_slip_analysis.get('rate_percentage', 'N/A')}%", 'Por Época'],
+            ['Multipath Médio', str(multipath_avg), str(multipath_assessment)],
+            ['Pico de Multipath', str(multipath_peak), 'Máximo Detectado'],
+            ['Cycle Slips Detectados', str(cycle_slips_total), str(cycle_slips_assessment)],
+            ['Taxa de Cycle Slips', f"{cycle_slips_rate}%" if cycle_slips_rate != 'N/A' else cycle_slips_rate, 'Por Época'],
         ]
         
         signal_table = Table(signal_data, colWidths=[6*cm, 4*cm, 6*cm])
@@ -253,14 +315,17 @@ class PDFGenerator:
         # Seção 7: Validação Geodésica
         story.append(Paragraph("7. VALIDAÇÃO GEODÉSICA", self.styles['SubtitleStyle']))
         geodetic_validation = file_info.get('geodetic_validation', {})
+        if not geodetic_validation or not isinstance(geodetic_validation, dict):
+            geodetic_validation = {}
+            
         geodetic_data = [
             ['Especificação', 'Valor'],
-            ['Sistema de Coordenadas', geodetic_validation.get('coordinate_system', 'N/A')],
-            ['Datum', geodetic_validation.get('datum', 'N/A')],
-            ['Projeção', geodetic_validation.get('projection', 'N/A')],
-            ['Elipsoide de Referência', geodetic_validation.get('reference_ellipsoid', 'N/A')],
-            ['Modelo Geoidal', geodetic_validation.get('geoid_model', 'N/A')],
-            ['Norma INCRA', geodetic_validation.get('incra_standard', 'N/A')],
+            ['Sistema de Coordenadas', str(geodetic_validation.get('coordinate_system', 'SIRGAS 2000'))],
+            ['Datum', str(geodetic_validation.get('datum', 'SIRGAS 2000'))],
+            ['Projeção', str(geodetic_validation.get('projection', 'UTM'))],
+            ['Elipsoide de Referência', str(geodetic_validation.get('reference_ellipsoid', 'GRS 80'))],
+            ['Modelo Geoidal', str(geodetic_validation.get('geoid_model', 'MAPGEO2015'))],
+            ['Norma INCRA', str(geodetic_validation.get('incra_standard', 'NBR 14166:2022'))],
         ]
         
         geodetic_table = Table(geodetic_data, colWidths=[8*cm, 8*cm])
@@ -278,7 +343,9 @@ class PDFGenerator:
         # Seção 8: Parecer Final
         story.append(Paragraph("8. PARECER TÉCNICO PARA GEORREFERENCIAMENTO", self.styles['SubtitleStyle']))
         
-        if file_info.get('incra_compliant'):
+        # Verificação segura do status INCRA
+        incra_status = file_info.get('incra_compliant', False)
+        if isinstance(incra_status, bool) and incra_status:
             parecer_text = """
             ✅ <b>DADOS APROVADOS PARA CERTIFICAÇÃO INCRA/SIGEF</b><br/>
             ✅ Atende critérios técnicos da norma NBR 14166:2022<br/>
@@ -297,20 +364,22 @@ class PDFGenerator:
         story.append(Paragraph(parecer_text, self.styles['BodyStyle']))
         story.append(Spacer(1, 15))
         
-        # Problemas identificados
+        # Problemas identificados (com validação)
         issues = file_info.get('issues', [])
-        if issues:
+        if issues and isinstance(issues, list) and len(issues) > 0:
             story.append(Paragraph("PROBLEMAS IDENTIFICADOS:", self.styles['SubtitleStyle']))
             for i, issue in enumerate(issues, 1):
-                story.append(Paragraph(f"{i}. {issue}", self.styles['BodyStyle']))
+                if issue and isinstance(issue, str):
+                    story.append(Paragraph(f"{i}. {issue}", self.styles['BodyStyle']))
             story.append(Spacer(1, 10))
         
-        # Recomendações técnicas
+        # Recomendações técnicas (com validação)
         recommendations = file_info.get('recommendations', [])
-        if recommendations:
+        if recommendations and isinstance(recommendations, list) and len(recommendations) > 0:
             story.append(Paragraph("RECOMENDAÇÕES TÉCNICAS:", self.styles['SubtitleStyle']))
             for i, rec in enumerate(recommendations, 1):
-                story.append(Paragraph(f"{i}. {rec}", self.styles['BodyStyle']))
+                if rec and isinstance(rec, str):
+                    story.append(Paragraph(f"{i}. {rec}", self.styles['BodyStyle']))
             story.append(Spacer(1, 15))
         
         # Rodapé técnico
