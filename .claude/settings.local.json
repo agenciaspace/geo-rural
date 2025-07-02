@@ -24,7 +24,11 @@
       "Bash(git add:*)",
       "Bash(git remote remove:*)",
       "Bash(git remote add:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(git rm:*)",
+      "Bash(mv:*)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)"
     ],
     "deny": []
   }
