@@ -80,10 +80,21 @@ SET
   )
 WHERE budget_request IS NULL AND client_name IS NOT NULL;
 
--- 2.2 Gerar custom_link para orçamentos sem link
-UPDATE budgets 
-SET custom_link = 'orcamento-' || LPAD((ROW_NUMBER() OVER (ORDER BY created_at))::TEXT, 4, '0')
-WHERE custom_link IS NULL;
+-- 2.2 Gerar custom_link para orçamentos sem link (abordagem simples e compatível)
+DO $$
+DECLARE
+    budget_record RECORD;
+    counter INTEGER := 1;
+BEGIN
+    FOR budget_record IN 
+        SELECT id FROM budgets WHERE custom_link IS NULL ORDER BY created_at
+    LOOP
+        UPDATE budgets 
+        SET custom_link = 'orcamento-' || LPAD(counter::TEXT, 4, '0')
+        WHERE id = budget_record.id;
+        counter := counter + 1;
+    END LOOP;
+END $$;
 
 -- ===========================================
 -- PARTE 3: LIMPAR E RECRIAR ÍNDICES

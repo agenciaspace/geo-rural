@@ -12,15 +12,21 @@ Este guia explica como configurar o Supabase para persistência de dados do GeoR
 
 ### 1. **Executar Script de Configuração**
 
-**⚡ SOLUÇÃO RÁPIDA:** Execute apenas um script que resolve tudo:
+**⚡ SOLUÇÃO RECOMENDADA:** Execute um dos scripts completos:
 
+#### **Opção A - Script Completo (Recomendado):**
 ```sql
 -- Execute o arquivo: supabase/complete_setup.sql
--- Este script funciona para instalações novas E existentes
--- Ele detecta automaticamente o que precisa ser feito
+-- Script mais completo com numeração sequencial de links
 ```
 
-#### **Scripts Alternativos (se preferir):**
+#### **Opção B - Script Simples (Se Opção A der erro):**
+```sql
+-- Execute o arquivo: supabase/simple_setup.sql  
+-- Script mais básico, sem stored procedures complexas
+```
+
+#### **Scripts Alternativos (Método Antigo):**
 
 **Para instalação nova:**
 ```sql
