@@ -8,7 +8,7 @@ RUN npm run build
 
 # ---------- Stage 2: Build Python backend ----------
 FROM python:3.12-slim AS backend
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONUNBUAFFERED=1
 WORKDIR /app
 
 # System build deps for numpy/scipy/georinex
