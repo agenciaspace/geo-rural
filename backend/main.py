@@ -263,8 +263,10 @@ def analyze_rinex_enhanced(file_path: str) -> Dict[str, Any]:
                 line[1:3].isdigit() and line[4:6].strip().isdigit() and line[7:9].strip().isdigit()):
                 
                 epoch_count += 1
-                if epoch_count <= 100:  # Log apenas primeiras épocas para debug
-                    logger.info(f"🔍 Primeira linha de época encontrada na linha {i}: '{line.strip()}'")
+                if epoch_count <= 5:  # Log apenas 5 primeiras épocas
+                    logger.info(f"🔍 Época {epoch_count} na linha {i}")
+                elif epoch_count % 1000 == 0:  # Log a cada 1000 épocas
+                    logger.info(f"🔄 Processadas {epoch_count} épocas...")
                     
                 # Extrai IDs de satélites desta época
                 satellite_section = line[32:68]  # Seção de satélites na linha de época
@@ -288,7 +290,7 @@ def analyze_rinex_enhanced(file_path: str) -> Dict[str, Any]:
                             satellites_found.add(sat_id)
                     next_line_idx += 1
         
-        logger.info(f"✅ {epoch_count} épocas carregadas")
+        logger.info(f"✅ {epoch_count} épocas processadas")
         
         # Sempre tenta calcular duração precisa baseada em timestamps reais
         duration_hours = 0.0
@@ -676,8 +678,6 @@ async def upload_gnss_file(file: UploadFile = File(...)):
         allowed_extensions = ['.21o', '.rnx', '.zip', '.obs', '.nav', '.23o', '.22o', '.24o']
         filename = file.filename or "unknown"
         file_extension = os.path.splitext(filename.lower())[1]
-        
-        logger.info(f"Extensão detectada: {file_extension}")
 
         if file_extension not in allowed_extensions:
             raise HTTPException(
