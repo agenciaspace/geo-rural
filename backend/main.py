@@ -122,6 +122,27 @@ class SavedBudget:
     custom_link: Optional[str] = None
     status: str = "active"  # "active", "archived", "expired"
 
+@dataclass
+class Client:
+    id: str
+    user_id: str
+    name: str
+    email: str
+    phone: Optional[str] = None
+    client_type: str = "pessoa_fisica"  # "pessoa_fisica", "pessoa_juridica"
+    document: Optional[str] = None  # CPF ou CNPJ
+    company_name: Optional[str] = None
+    address: Optional[Dict[str, Any]] = None
+    notes: Optional[str] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+    is_active: bool = True
+    secondary_phone: Optional[str] = None
+    website: Optional[str] = None
+    total_budgets: int = 0
+    total_spent: float = 0.0
+    last_budget_date: Optional[str] = None
+
 class BudgetManager:
     def __init__(self, storage_dir: str = None):
         # Configuração do Supabase
@@ -562,6 +583,319 @@ class BudgetManager:
                 return budget.get('version_history', [])
         return None
 
+class ClientManager:
+    def __init__(self, budget_manager_instance):
+        self.budget_manager = budget_manager_instance
+        # Usar a mesma configuração do BudgetManager
+        self.use_supabase = budget_manager_instance.use_supabase
+        if self.use_supabase:
+            self.supabase = budget_manager_instance.supabase
+            logger.info("ClientManager using Supabase for storage")
+        else:
+            # Para SQLite, usar o mesmo diretório
+            self.storage_dir = budget_manager_instance.storage_dir
+            self.db_file = self.storage_dir / "clients.db"
+            self._ensure_database()
+            logger.info("ClientManager using SQLite for storage")
+    
+    def _ensure_database(self):
+        """Garante que o banco SQLite para clientes existe"""
+        if not self.use_supabase:
+            try:
+                conn = sqlite3.connect(self.db_file)
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS clients (
+                        id TEXT PRIMARY KEY,
+                        user_id TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        email TEXT NOT NULL,
+                        phone TEXT,
+                        client_type TEXT DEFAULT 'pessoa_fisica',
+                        document TEXT,
+                        company_name TEXT,
+                        address TEXT,
+                        notes TEXT,
+                        created_at TEXT NOT NULL,
+                        updated_at TEXT NOT NULL,
+                        is_active BOOLEAN DEFAULT 1,
+                        secondary_phone TEXT,
+                        website TEXT,
+                        total_budgets INTEGER DEFAULT 0,
+                        total_spent DECIMAL DEFAULT 0,
+                        last_budget_date TEXT
+                    )
+                ''')
+                
+                cursor.execute('CREATE INDEX IF NOT EXISTS idx_clients_user_id ON clients(user_id)')
+                cursor.execute('CREATE INDEX IF NOT EXISTS idx_clients_email ON clients(email)')
+                cursor.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_user_email ON clients(user_id, email)')
+                
+                conn.commit()
+                conn.close()
+                logger.info(f"SQLite clients database initialized: {self.db_file}")
+            except Exception as e:
+                logger.error(f"Error initializing clients database: {e}")
+                raise
+    
+    def _get_connection(self):
+        """Retorna conexão SQLite se não estiver usando Supabase"""
+        if not self.use_supabase:
+            conn = sqlite3.connect(self.db_file)
+            conn.row_factory = sqlite3.Row
+            return conn
+        return None
+    
+    def create_client(self, user_id: str, client_data: Dict[str, Any]) -> str:
+        """Cria um novo cliente"""
+        client_id = str(uuid.uuid4())
+        now = dt.now().isoformat()
+        
+        if self.use_supabase:
+            return self._create_client_supabase(client_id, user_id, client_data, now)
+        else:
+            return self._create_client_sqlite(client_id, user_id, client_data, now)
+    
+    def _create_client_supabase(self, client_id: str, user_id: str, client_data: Dict[str, Any], now: str) -> str:
+        """Cria cliente no Supabase"""
+        try:
+            supabase_data = {
+                'id': client_id,
+                'user_id': user_id,
+                'name': client_data['name'],
+                'email': client_data['email'],
+                'phone': client_data.get('phone'),
+                'client_type': client_data.get('client_type', 'pessoa_fisica'),
+                'document': client_data.get('document'),
+                'company_name': client_data.get('company_name'),
+                'address': client_data.get('address'),
+                'notes': client_data.get('notes'),
+                'created_at': now,
+                'updated_at': now,
+                'is_active': client_data.get('is_active', True),
+                'secondary_phone': client_data.get('secondary_phone'),
+                'website': client_data.get('website')
+            }
+            
+            response = self.supabase.table('clients').insert(supabase_data).execute()
+            logger.info(f"Client created in Supabase: {client_id}")
+            return client_id
+        except Exception as e:
+            logger.error(f"Error creating client in Supabase: {e}")
+            raise
+    
+    def _create_client_sqlite(self, client_id: str, user_id: str, client_data: Dict[str, Any], now: str) -> str:
+        """Cria cliente no SQLite"""
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                INSERT INTO clients (
+                    id, user_id, name, email, phone, client_type, document,
+                    company_name, address, notes, created_at, updated_at,
+                    is_active, secondary_phone, website
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                client_id, user_id, client_data['name'], client_data['email'],
+                client_data.get('phone'), client_data.get('client_type', 'pessoa_fisica'),
+                client_data.get('document'), client_data.get('company_name'),
+                json.dumps(client_data.get('address')) if client_data.get('address') else None,
+                client_data.get('notes'), now, now,
+                client_data.get('is_active', True), client_data.get('secondary_phone'),
+                client_data.get('website')
+            ))
+            
+            conn.commit()
+            conn.close()
+            logger.info(f"Client created in SQLite: {client_id}")
+            return client_id
+        except Exception as e:
+            logger.error(f"Error creating client in SQLite: {e}")
+            raise
+    
+    def list_clients(self, user_id: str, limit: int = 50, active_only: bool = True) -> List[Dict[str, Any]]:
+        """Lista clientes do usuário"""
+        if self.use_supabase:
+            return self._list_clients_supabase(user_id, limit, active_only)
+        else:
+            return self._list_clients_sqlite(user_id, limit, active_only)
+    
+    def _list_clients_supabase(self, user_id: str, limit: int, active_only: bool) -> List[Dict[str, Any]]:
+        """Lista clientes do Supabase"""
+        try:
+            query = self.supabase.table('clients').select('*').eq('user_id', user_id)
+            
+            if active_only:
+                query = query.eq('is_active', True)
+            
+            response = query.order('created_at', desc=True).limit(limit).execute()
+            return response.data
+        except Exception as e:
+            logger.error(f"Error listing clients from Supabase: {e}")
+            return []
+    
+    def _list_clients_sqlite(self, user_id: str, limit: int, active_only: bool) -> List[Dict[str, Any]]:
+        """Lista clientes do SQLite"""
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            query = 'SELECT * FROM clients WHERE user_id = ?'
+            params = [user_id]
+            
+            if active_only:
+                query += ' AND is_active = 1'
+            
+            query += ' ORDER BY created_at DESC LIMIT ?'
+            params.append(limit)
+            
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+            conn.close()
+            
+            clients = []
+            for row in rows:
+                client = dict(row)
+                # Parse JSON fields
+                if client.get('address'):
+                    try:
+                        client['address'] = json.loads(client['address'])
+                    except:
+                        client['address'] = None
+                clients.append(client)
+            
+            return clients
+        except Exception as e:
+            logger.error(f"Error listing clients from SQLite: {e}")
+            return []
+    
+    def get_client(self, user_id: str, client_id: str) -> Optional[Dict[str, Any]]:
+        """Busca um cliente específico"""
+        if self.use_supabase:
+            return self._get_client_supabase(user_id, client_id)
+        else:
+            return self._get_client_sqlite(user_id, client_id)
+    
+    def _get_client_supabase(self, user_id: str, client_id: str) -> Optional[Dict[str, Any]]:
+        """Busca cliente no Supabase"""
+        try:
+            response = self.supabase.table('clients').select('*').eq('user_id', user_id).eq('id', client_id).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logger.error(f"Error getting client from Supabase: {e}")
+            return None
+    
+    def _get_client_sqlite(self, user_id: str, client_id: str) -> Optional[Dict[str, Any]]:
+        """Busca cliente no SQLite"""
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM clients WHERE user_id = ? AND id = ?', (user_id, client_id))
+            row = cursor.fetchone()
+            conn.close()
+            
+            if row:
+                client = dict(row)
+                if client.get('address'):
+                    try:
+                        client['address'] = json.loads(client['address'])
+                    except:
+                        client['address'] = None
+                return client
+            return None
+        except Exception as e:
+            logger.error(f"Error getting client from SQLite: {e}")
+            return None
+    
+    def update_client(self, user_id: str, client_id: str, client_data: Dict[str, Any]) -> bool:
+        """Atualiza dados do cliente"""
+        if self.use_supabase:
+            return self._update_client_supabase(user_id, client_id, client_data)
+        else:
+            return self._update_client_sqlite(user_id, client_id, client_data)
+    
+    def _update_client_supabase(self, user_id: str, client_id: str, client_data: Dict[str, Any]) -> bool:
+        """Atualiza cliente no Supabase"""
+        try:
+            update_data = client_data.copy()
+            update_data['updated_at'] = dt.now().isoformat()
+            
+            response = self.supabase.table('clients').update(update_data).eq('user_id', user_id).eq('id', client_id).execute()
+            return len(response.data) > 0
+        except Exception as e:
+            logger.error(f"Error updating client in Supabase: {e}")
+            return False
+    
+    def _update_client_sqlite(self, user_id: str, client_id: str, client_data: Dict[str, Any]) -> bool:
+        """Atualiza cliente no SQLite"""
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            # Construir query dinamicamente baseado nos campos fornecidos
+            set_clauses = []
+            params = []
+            
+            for field, value in client_data.items():
+                if field == 'address' and value:
+                    set_clauses.append(f"{field} = ?")
+                    params.append(json.dumps(value))
+                else:
+                    set_clauses.append(f"{field} = ?")
+                    params.append(value)
+            
+            set_clauses.append("updated_at = ?")
+            params.append(dt.now().isoformat())
+            
+            params.extend([user_id, client_id])
+            
+            query = f"UPDATE clients SET {', '.join(set_clauses)} WHERE user_id = ? AND id = ?"
+            cursor.execute(query, params)
+            
+            updated = cursor.rowcount > 0
+            conn.commit()
+            conn.close()
+            return updated
+        except Exception as e:
+            logger.error(f"Error updating client in SQLite: {e}")
+            return False
+    
+    def delete_client(self, user_id: str, client_id: str) -> bool:
+        """Remove cliente (soft delete - marca como inativo)"""
+        return self.update_client(user_id, client_id, {'is_active': False})
+    
+    def get_client_by_email(self, user_id: str, email: str) -> Optional[Dict[str, Any]]:
+        """Busca cliente por email"""
+        if self.use_supabase:
+            try:
+                response = self.supabase.table('clients').select('*').eq('user_id', user_id).eq('email', email).execute()
+                return response.data[0] if response.data else None
+            except Exception as e:
+                logger.error(f"Error getting client by email from Supabase: {e}")
+                return None
+        else:
+            try:
+                conn = self._get_connection()
+                cursor = conn.cursor()
+                cursor.execute('SELECT * FROM clients WHERE user_id = ? AND email = ? AND is_active = 1', (user_id, email))
+                row = cursor.fetchone()
+                conn.close()
+                
+                if row:
+                    client = dict(row)
+                    if client.get('address'):
+                        try:
+                            client['address'] = json.loads(client['address'])
+                        except:
+                            client['address'] = None
+                    return client
+                return None
+            except Exception as e:
+                logger.error(f"Error getting client by email from SQLite: {e}")
+                return None
+
 class BudgetRequestModel(BaseModel):
     client_name: str
     client_email: str
@@ -582,6 +916,31 @@ class CustomLinkModel(BaseModel):
 
 class RejectionModel(BaseModel):
     comment: str
+
+class ClientCreateModel(BaseModel):
+    name: str
+    email: str
+    phone: Optional[str] = None
+    client_type: str = "pessoa_fisica"  # "pessoa_fisica", "pessoa_juridica"
+    document: Optional[str] = None  # CPF ou CNPJ
+    company_name: Optional[str] = None
+    address: Optional[Dict[str, Any]] = None
+    notes: Optional[str] = None
+    secondary_phone: Optional[str] = None
+    website: Optional[str] = None
+
+class ClientUpdateModel(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    client_type: Optional[str] = None
+    document: Optional[str] = None
+    company_name: Optional[str] = None
+    address: Optional[Dict[str, Any]] = None
+    notes: Optional[str] = None
+    secondary_phone: Optional[str] = None
+    website: Optional[str] = None
+    is_active: Optional[bool] = None
 
 def analyze_rinex_file(file_path: str) -> Dict[str, Any]:
     """Analisa arquivo RINEX e retorna parecer técnico com processamento geodésico completo"""
@@ -1917,6 +2276,10 @@ except ImportError:
 budget_manager = BudgetManager()
 logger.info("Budget manager initialized")
 
+# Inicializar Client Manager
+client_manager = ClientManager(budget_manager)
+logger.info("Client manager initialized")
+
 @app.post("/api/calculate-budget")
 async def calculate_budget(request: BudgetRequestModel):
     """Endpoint para calcular orçamento"""
@@ -2384,6 +2747,146 @@ async def delete_budget(budget_id: str):
         logger.error(f"Erro ao remover orçamento: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
+# ===========================================
+# ENDPOINTS DE CLIENTES
+# ===========================================
+
+@app.post("/api/clients")
+async def create_client(client_data: ClientCreateModel):
+    """Cria um novo cliente"""
+    try:
+        # TODO: Obter user_id da autenticação
+        user_id = "demo-user"  # Placeholder até implementar autenticação
+        
+        client_id = client_manager.create_client(user_id, client_data.dict())
+        
+        return {
+            "success": True,
+            "client_id": client_id,
+            "message": "Cliente criado com sucesso"
+        }
+    except Exception as e:
+        logger.error(f"Erro ao criar cliente: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+@app.get("/api/clients")
+async def list_clients(limit: int = 50, active_only: bool = True):
+    """Lista clientes do usuário"""
+    try:
+        # TODO: Obter user_id da autenticação
+        user_id = "demo-user"  # Placeholder até implementar autenticação
+        
+        clients = client_manager.list_clients(user_id, limit, active_only)
+        
+        return {
+            "success": True,
+            "clients": clients,
+            "count": len(clients)
+        }
+    except Exception as e:
+        logger.error(f"Erro ao listar clientes: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+@app.get("/api/clients/{client_id}")
+async def get_client(client_id: str):
+    """Busca um cliente específico"""
+    try:
+        # TODO: Obter user_id da autenticação
+        user_id = "demo-user"  # Placeholder até implementar autenticação
+        
+        client = client_manager.get_client(user_id, client_id)
+        
+        if not client:
+            raise HTTPException(status_code=404, detail="Cliente não encontrado")
+        
+        return {
+            "success": True,
+            "client": client
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao buscar cliente: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+@app.put("/api/clients/{client_id}")
+async def update_client(client_id: str, client_data: ClientUpdateModel):
+    """Atualiza dados do cliente"""
+    try:
+        # TODO: Obter user_id da autenticação
+        user_id = "demo-user"  # Placeholder até implementar autenticação
+        
+        # Filtrar apenas campos que foram fornecidos
+        update_data = {k: v for k, v in client_data.dict().items() if v is not None}
+        
+        if not update_data:
+            raise HTTPException(status_code=400, detail="Nenhum dado para atualizar")
+        
+        updated = client_manager.update_client(user_id, client_id, update_data)
+        
+        if not updated:
+            raise HTTPException(status_code=404, detail="Cliente não encontrado")
+        
+        return {
+            "success": True,
+            "message": "Cliente atualizado com sucesso"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao atualizar cliente: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+@app.delete("/api/clients/{client_id}")
+async def delete_client(client_id: str):
+    """Remove cliente (soft delete)"""
+    try:
+        # TODO: Obter user_id da autenticação
+        user_id = "demo-user"  # Placeholder até implementar autenticação
+        
+        deleted = client_manager.delete_client(user_id, client_id)
+        
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Cliente não encontrado")
+        
+        return {
+            "success": True,
+            "message": "Cliente removido com sucesso"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao remover cliente: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+@app.get("/api/clients/search/email/{email}")
+async def get_client_by_email(email: str):
+    """Busca cliente por email"""
+    try:
+        # TODO: Obter user_id da autenticação
+        user_id = "demo-user"  # Placeholder até implementar autenticação
+        
+        client = client_manager.get_client_by_email(user_id, email)
+        
+        if not client:
+            return {
+                "success": True,
+                "client": None,
+                "message": "Cliente não encontrado"
+            }
+        
+        return {
+            "success": True,
+            "client": client
+        }
+    except Exception as e:
+        logger.error(f"Erro ao buscar cliente por email: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+# ===========================================
+# ENDPOINTS DE INFORMAÇÃO
+# ===========================================
+
 # Lista dos endpoints disponíveis
 @app.get("/api/endpoints")
 async def api_endpoints():
@@ -2395,7 +2898,10 @@ async def api_endpoints():
             "/api/generate-gnss-report-pdf - Gerar PDF do relatório técnico GNSS",
             "/api/budgets - Gerenciar orçamentos salvos (CRUD)",
             "/api/budgets/{budget_id} - Operações específicas por ID",
-            "/api/budgets/link/{custom_link} - Acessar por link personalizado"
+            "/api/budgets/link/{custom_link} - Acessar por link personalizado",
+            "/api/clients - Gerenciar base de clientes (CRUD)",
+            "/api/clients/{client_id} - Operações específicas por cliente",
+            "/api/clients/search/email/{email} - Buscar cliente por email"
         ]
     }
 

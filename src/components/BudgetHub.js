@@ -10,9 +10,16 @@ const BudgetHub = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingLink, setEditingLink] = useState(null);
   const [newLinkValue, setNewLinkValue] = useState('');
+  
+  // Cliente management states
+  const [clients, setClients] = useState([]);
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [useExistingClient, setUseExistingClient] = useState(false);
+  const [showClientForm, setShowClientForm] = useState(false);
 
   // Form data para criação/edição
   const [formData, setFormData] = useState({
+    client_id: '',
     client_name: '',
     client_email: '',
     client_phone: '',
@@ -27,6 +34,25 @@ const BudgetHub = () => {
     includes_environmental: false,
     additional_notes: ''
   });
+  
+  // Form data para novo cliente
+  const [newClientData, setNewClientData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    client_type: 'pessoa_fisica',
+    document: '',
+    company_name: '',
+    address: {
+      street: '',
+      number: '',
+      city: '',
+      state: '',
+      zip_code: '',
+      country: 'Brasil'
+    },
+    notes: ''
+  });
 
   const brazilianStates = [
     'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
@@ -37,6 +63,9 @@ const BudgetHub = () => {
   useEffect(() => {
     if (activeView === 'list') {
       loadBudgets();
+    }
+    if (activeView === 'create' || activeView === 'edit') {
+      loadClients();
     }
   }, [activeView]);
 
@@ -58,6 +87,19 @@ const BudgetHub = () => {
     }
   };
 
+  const loadClients = async () => {
+    try {
+      const response = await fetch('/api/clients');
+      const data = await response.json();
+      
+      if (data.success) {
+        setClients(data.clients);
+      }
+    } catch (err) {
+      console.error('Erro ao carregar clientes:', err);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -66,8 +108,89 @@ const BudgetHub = () => {
     }));
   };
 
+  const handleNewClientInputChange = (e) => {
+    const { name, value } = e.target;
+    
+    if (name.startsWith('address.')) {
+      const addressField = name.split('.')[1];
+      setNewClientData(prev => ({
+        ...prev,
+        address: {
+          ...prev.address,
+          [addressField]: value
+        }
+      }));
+    } else {
+      setNewClientData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const handleClientSelection = (clientId) => {
+    const client = clients.find(c => c.id === clientId);
+    if (client) {
+      setSelectedClient(client);
+      setFormData(prev => ({
+        ...prev,
+        client_id: client.id,
+        client_name: client.name,
+        client_email: client.email,
+        client_phone: client.phone || '',
+        client_type: client.client_type || 'pessoa_fisica'
+      }));
+    } else {
+      setSelectedClient(null);
+      setFormData(prev => ({
+        ...prev,
+        client_id: '',
+        client_name: '',
+        client_email: '',
+        client_phone: '',
+        client_type: 'pessoa_fisica'
+      }));
+    }
+  };
+
+  const handleCreateNewClient = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    if (!newClientData.name || !newClientData.email) {
+      setError('Nome e email do cliente são obrigatórios');
+      setIsLoading(false);
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/clients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newClientData)
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        await loadClients();
+        handleClientSelection(result.client.id);
+        setUseExistingClient(true);
+        setShowClientForm(false);
+        setSuccess('✅ Cliente criado com sucesso!');
+      } else {
+        throw new Error(result.detail || 'Erro ao criar cliente');
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
+      client_id: '',
       client_name: '',
       client_email: '',
       client_phone: '',
@@ -81,6 +204,26 @@ const BudgetHub = () => {
       includes_topography: false,
       includes_environmental: false,
       additional_notes: ''
+    });
+    setSelectedClient(null);
+    setUseExistingClient(false);
+    setShowClientForm(false);
+    setNewClientData({
+      name: '',
+      email: '',
+      phone: '',
+      client_type: 'pessoa_fisica',
+      document: '',
+      company_name: '',
+      address: {
+        street: '',
+        number: '',
+        city: '',
+        state: '',
+        zip_code: '',
+        country: 'Brasil'
+      },
+      notes: ''
     });
   };
 
@@ -120,14 +263,21 @@ const BudgetHub = () => {
       }
 
       // Depois salva o orçamento
+      const budgetData = {
+        ...formData,
+        vertices_count: parseInt(formData.vertices_count),
+        property_area: parseFloat(formData.property_area)
+      };
+      
+      // Se tem client_id, incluir no orçamento
+      if (formData.client_id) {
+        budgetData.client_id = formData.client_id;
+      }
+      
       const saveResponse = await fetch('/api/budgets/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          vertices_count: parseInt(formData.vertices_count),
-          property_area: parseFloat(formData.property_area)
-        })
+        body: JSON.stringify(budgetData)
       });
 
       const saveResult = await saveResponse.json();
@@ -313,14 +463,20 @@ const BudgetHub = () => {
   );
 
   const isFormValid = () => {
-    return formData.client_name && 
-           formData.client_email && 
-           formData.client_phone && 
+    const hasClientData = useExistingClient ? 
+      formData.client_id : 
+      (formData.client_name && formData.client_email);
+      
+    return hasClientData &&
            formData.property_name && 
            formData.state && 
            formData.city && 
            formData.vertices_count && 
            formData.property_area;
+  };
+
+  const isNewClientFormValid = () => {
+    return newClientData.name && newClientData.email;
   };
 
   return (
@@ -638,59 +794,276 @@ const BudgetHub = () => {
           )}
           
           <div style={{ display: 'grid', gap: '1rem' }}>
-            <h4>👤 Dados do Cliente</h4>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Nome Completo *</label>
-                <input
-                  type="text"
-                  name="client_name"
-                  value={formData.client_name}
-                  onChange={handleInputChange}
-                  placeholder="João Silva"
-                  required
-                />
+            <h4>👤 Seleção de Cliente</h4>
+            
+            {/* Client Selection Type */}
+            <div style={{ 
+              background: '#f8f9fa', 
+              padding: '1rem', 
+              borderRadius: '6px',
+              border: '1px solid #e9ecef'
+            }}>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
+                  Como deseja informar o cliente?
+                </label>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      checked={useExistingClient}
+                      onChange={() => {
+                        setUseExistingClient(true);
+                        setShowClientForm(false);
+                      }}
+                      style={{ marginRight: '0.5rem' }}
+                    />
+                    👥 Selecionar cliente existente
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      checked={!useExistingClient}
+                      onChange={() => {
+                        setUseExistingClient(false);
+                        setSelectedClient(null);
+                        handleClientSelection('');
+                      }}
+                      style={{ marginRight: '0.5rem' }}
+                    />
+                    ✏️ Inserir dados manualmente
+                  </label>
+                </div>
               </div>
               
-              <div className="form-group">
-                <label>E-mail *</label>
-                <input
-                  type="email"
-                  name="client_email"
-                  value={formData.client_email}
-                  onChange={handleInputChange}
-                  placeholder="joao@email.com"
-                  required
-                />
-              </div>
+              {useExistingClient && (
+                <div>
+                  <div className="form-group">
+                    <label>Selecionar Cliente *</label>
+                    <select
+                      value={formData.client_id}
+                      onChange={(e) => handleClientSelection(e.target.value)}
+                      style={{ marginBottom: '0.5rem' }}
+                    >
+                      <option value="">Selecione um cliente...</option>
+                      {clients.map(client => (
+                        <option key={client.id} value={client.id}>
+                          {client.name} - {client.email}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {selectedClient && (
+                    <div style={{ 
+                      background: '#e7f3ff', 
+                      padding: '0.75rem', 
+                      borderRadius: '4px',
+                      fontSize: '0.9rem',
+                      marginBottom: '0.5rem'
+                    }}>
+                      <strong>Cliente selecionado:</strong><br/>
+                      📧 {selectedClient.email}<br/>
+                      {selectedClient.phone && <span>📞 {selectedClient.phone}<br/></span>}
+                      📊 {selectedClient.total_budgets || 0} orçamento(s) anteriores
+                    </div>
+                  )}
+                  
+                  <button
+                    type="button"
+                    onClick={() => setShowClientForm(true)}
+                    style={{
+                      background: '#28a745',
+                      color: 'white',
+                      border: 'none',
+                      padding: '0.5rem 1rem',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    ➕ Criar novo cliente
+                  </button>
+                </div>
+              )}
+              
+              {!useExistingClient && (
+                <div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Nome Completo *</label>
+                      <input
+                        type="text"
+                        name="client_name"
+                        value={formData.client_name}
+                        onChange={handleInputChange}
+                        placeholder="João Silva"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label>E-mail *</label>
+                      <input
+                        type="email"
+                        name="client_email"
+                        value={formData.client_email}
+                        onChange={handleInputChange}
+                        placeholder="joao@email.com"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Telefone</label>
+                      <input
+                        type="tel"
+                        name="client_phone"
+                        value={formData.client_phone}
+                        onChange={handleInputChange}
+                        placeholder="(11) 99999-9999"
+                      />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label>Tipo de Cliente</label>
+                      <select
+                        name="client_type"
+                        value={formData.client_type}
+                        onChange={handleInputChange}
+                      >
+                        <option value="pessoa_fisica">Pessoa Física</option>
+                        <option value="pessoa_juridica">Pessoa Jurídica</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             
-            <div className="form-row">
-              <div className="form-group">
-                <label>Telefone *</label>
-                <input
-                  type="tel"
-                  name="client_phone"
-                  value={formData.client_phone}
-                  onChange={handleInputChange}
-                  placeholder="(11) 99999-9999"
-                  required
-                />
+            {/* New Client Form Modal */}
+            {showClientForm && (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000
+              }}>
+                <div style={{
+                  background: 'white',
+                  padding: '2rem',
+                  borderRadius: '8px',
+                  maxWidth: '600px',
+                  width: '90%',
+                  maxHeight: '80vh',
+                  overflow: 'auto'
+                }}>
+                  <h3>➕ Criar Novo Cliente</h3>
+                  
+                  <div style={{ display: 'grid', gap: '1rem' }}>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Nome Completo *</label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={newClientData.name}
+                          onChange={handleNewClientInputChange}
+                          placeholder="João da Silva"
+                        />
+                      </div>
+                      
+                      <div className="form-group">
+                        <label>E-mail *</label>
+                        <input
+                          type="email"
+                          name="email"
+                          value={newClientData.email}
+                          onChange={handleNewClientInputChange}
+                          placeholder="joao@email.com"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Telefone</label>
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={newClientData.phone}
+                          onChange={handleNewClientInputChange}
+                          placeholder="(11) 99999-9999"
+                        />
+                      </div>
+                      
+                      <div className="form-group">
+                        <label>Tipo de Cliente</label>
+                        <select
+                          name="client_type"
+                          value={newClientData.client_type}
+                          onChange={handleNewClientInputChange}
+                        >
+                          <option value="pessoa_fisica">Pessoa Física</option>
+                          <option value="pessoa_juridica">Pessoa Jurídica</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div className="form-group">
+                      <label>Observações</label>
+                      <textarea
+                        name="notes"
+                        value={newClientData.notes}
+                        onChange={handleNewClientInputChange}
+                        placeholder="Informações sobre o cliente..."
+                        rows="2"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                    <button
+                      onClick={handleCreateNewClient}
+                      disabled={!isNewClientFormValid() || isLoading}
+                      style={{
+                        background: '#28a745',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.75rem 1.5rem',
+                        borderRadius: '6px',
+                        cursor: isNewClientFormValid() && !isLoading ? 'pointer' : 'not-allowed',
+                        opacity: isNewClientFormValid() && !isLoading ? 1 : 0.6
+                      }}
+                    >
+                      {isLoading ? '⏳ Criando...' : '💾 Criar Cliente'}
+                    </button>
+                    
+                    <button
+                      onClick={() => setShowClientForm(false)}
+                      style={{
+                        background: 'transparent',
+                        color: '#6c757d',
+                        border: '2px solid #6c757d',
+                        padding: '0.75rem 1.5rem',
+                        borderRadius: '6px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      ❌ Cancelar
+                    </button>
+                  </div>
+                </div>
               </div>
-              
-              <div className="form-group">
-                <label>Tipo de Cliente *</label>
-                <select
-                  name="client_type"
-                  value={formData.client_type}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="pessoa_fisica">Pessoa Física</option>
-                  <option value="pessoa_juridica">Pessoa Jurídica</option>
-                </select>
-              </div>
-            </div>
+            )}
 
             <h4>🏞️ Dados da Propriedade</h4>
             <div className="form-group">

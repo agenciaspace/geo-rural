@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, useParams } from 'react-router-dom';
 import BudgetHub from './components/BudgetHub';
+import ClientManager from './components/ClientManager';
 import GnssUploader from './components/GnssUploader';
 import Dashboard from './components/Dashboard';
 import LandingPage from './components/LandingPage';
@@ -121,6 +122,12 @@ const MainApp = () => {
               📊 Dashboard
             </button>
             <button 
+              className={`nav-tab ${activeTab === 'clients' ? 'active' : ''}`}
+              onClick={() => setActiveTab('clients')}
+            >
+              👥 Gestão de Clientes
+            </button>
+            <button 
               className={`nav-tab ${activeTab === 'budgets' ? 'active' : ''}`}
               onClick={() => setActiveTab('budgets')}
             >
@@ -135,6 +142,7 @@ const MainApp = () => {
           </div>
           
           {activeTab === 'dashboard' && <Dashboard />}
+          {activeTab === 'clients' && <ClientManager />}
           {activeTab === 'budgets' && <BudgetHub />}
           {activeTab === 'gnss' && <GnssUploader />}
         </div>
