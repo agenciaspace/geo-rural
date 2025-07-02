@@ -103,6 +103,27 @@ const BudgetSimulator = () => {
     }
   };
 
+  const saveBudget = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await axios.post('/api/budgets/save', {
+        ...formData,
+        vertices_count: parseInt(formData.vertices_count),
+        property_area: parseFloat(formData.property_area)
+      });
+      
+      if (response.data.success) {
+        alert(`Orçamento salvo com sucesso! ID: ${response.data.budget_id}`);
+      }
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Erro ao salvar orçamento');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const isFormValid = () => {
     return formData.client_name && 
            formData.client_email && 
@@ -348,8 +369,17 @@ const BudgetSimulator = () => {
             <button 
               className="btn btn-primary"
               onClick={generatePDF}
+              style={{ marginRight: '1rem' }}
             >
               📄 Gerar Proposta em PDF
+            </button>
+            <button 
+              className="btn btn-primary"
+              onClick={saveBudget}
+              disabled={isLoading}
+              style={{ background: '#28a745', borderColor: '#28a745' }}
+            >
+              {isLoading ? '💾 Salvando...' : '💾 Salvar Orçamento'}
             </button>
           </div>
         </div>

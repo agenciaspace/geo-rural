@@ -9,10 +9,12 @@ import sys
 import logging
 import tempfile
 import zipfile
+import json
+import uuid
 from datetime import datetime as dt, timezone, timedelta
 from pathlib import Path
-from typing import Dict, Any, Tuple
-from dataclasses import dataclass
+from typing import Dict, Any, Tuple, Optional, List
+from dataclasses import dataclass, asdict
 
 # FastAPI
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request
@@ -98,6 +100,127 @@ class BudgetRequest:
     includes_topography: bool = False
     includes_environmental: bool = False
     additional_notes: str = ""
+
+@dataclass
+class SavedBudget:
+    id: str
+    budget_request: Dict[str, Any]
+    budget_result: Dict[str, Any]
+    created_at: str
+    updated_at: str
+    custom_link: Optional[str] = None
+    status: str = "active"  # "active", "archived", "expired"
+
+class BudgetManager:
+    def __init__(self, storage_dir: str = "data"):
+        self.storage_dir = Path(storage_dir)
+        self.storage_dir.mkdir(exist_ok=True)
+        self.budgets_file = self.storage_dir / "budgets.json"
+        self._ensure_storage()
+    
+    def _ensure_storage(self):
+        """Garante que o arquivo de storage existe"""
+        if not self.budgets_file.exists():
+            with open(self.budgets_file, 'w') as f:
+                json.dump({}, f)
+    
+    def _load_budgets(self) -> Dict[str, Dict]:
+        """Carrega todos os orçamentos do storage"""
+        try:
+            with open(self.budgets_file, 'r') as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return {}
+    
+    def _save_budgets(self, budgets: Dict[str, Dict]):
+        """Salva todos os orçamentos no storage"""
+        with open(self.budgets_file, 'w') as f:
+            json.dump(budgets, f, indent=2, ensure_ascii=False)
+    
+    def create_budget(self, budget_request: Dict[str, Any], budget_result: Dict[str, Any], custom_link: Optional[str] = None) -> str:
+        """Cria um novo orçamento salvo"""
+        budget_id = str(uuid.uuid4())
+        now = dt.now().isoformat()
+        
+        saved_budget = SavedBudget(
+            id=budget_id,
+            budget_request=budget_request,
+            budget_result=budget_result,
+            created_at=now,
+            updated_at=now,
+            custom_link=custom_link,
+            status="active"
+        )
+        
+        budgets = self._load_budgets()
+        budgets[budget_id] = asdict(saved_budget)
+        self._save_budgets(budgets)
+        
+        return budget_id
+    
+    def get_budget(self, budget_id: str) -> Optional[Dict[str, Any]]:
+        """Recupera um orçamento pelo ID"""
+        budgets = self._load_budgets()
+        return budgets.get(budget_id)
+    
+    def get_budget_by_link(self, custom_link: str) -> Optional[Dict[str, Any]]:
+        """Recupera um orçamento pelo link personalizado"""
+        budgets = self._load_budgets()
+        for budget in budgets.values():
+            if budget.get('custom_link') == custom_link:
+                return budget
+        return None
+    
+    def update_budget(self, budget_id: str, budget_request: Dict[str, Any], budget_result: Dict[str, Any]) -> bool:
+        """Atualiza um orçamento existente"""
+        budgets = self._load_budgets()
+        if budget_id not in budgets:
+            return False
+        
+        budgets[budget_id]['budget_request'] = budget_request
+        budgets[budget_id]['budget_result'] = budget_result
+        budgets[budget_id]['updated_at'] = dt.now().isoformat()
+        
+        self._save_budgets(budgets)
+        return True
+    
+    def list_budgets(self, limit: int = 50, status: str = "active") -> List[Dict[str, Any]]:
+        """Lista orçamentos com filtros"""
+        budgets = self._load_budgets()
+        filtered_budgets = [
+            budget for budget in budgets.values() 
+            if budget.get('status') == status
+        ]
+        
+        # Ordena por data de criação (mais recente primeiro)
+        filtered_budgets.sort(key=lambda x: x['created_at'], reverse=True)
+        return filtered_budgets[:limit]
+    
+    def delete_budget(self, budget_id: str) -> bool:
+        """Remove um orçamento"""
+        budgets = self._load_budgets()
+        if budget_id not in budgets:
+            return False
+        
+        del budgets[budget_id]
+        self._save_budgets(budgets)
+        return True
+    
+    def set_custom_link(self, budget_id: str, custom_link: str) -> bool:
+        """Define um link personalizado para o orçamento"""
+        budgets = self._load_budgets()
+        if budget_id not in budgets:
+            return False
+        
+        # Verifica se o link já existe
+        if self.get_budget_by_link(custom_link):
+            return False
+        
+        budgets[budget_id]['custom_link'] = custom_link
+        budgets[budget_id]['updated_at'] = dt.now().isoformat()
+        
+        self._save_budgets(budgets)
+        return True
 
 class BudgetRequestModel(BaseModel):
     client_name: str
@@ -1434,6 +1557,10 @@ except ImportError:
     logger.warning("PDF generator not available")
     pdf_generator = None
 
+# Inicializar Budget Manager
+budget_manager = BudgetManager()
+logger.info("Budget manager initialized")
+
 @app.post("/api/calculate-budget")
 async def calculate_budget(request: BudgetRequestModel):
     """Endpoint para calcular orçamento"""
@@ -1609,9 +1736,227 @@ async def api_endpoints():
             "/api/upload-gnss - Upload e análise de arquivos GNSS",
             "/api/calculate-budget - Calcular orçamento",
             "/api/generate-proposal-pdf - Gerar PDF da proposta",
-            "/api/generate-gnss-report-pdf - Gerar PDF do relatório técnico GNSS"
+            "/api/generate-gnss-report-pdf - Gerar PDF do relatório técnico GNSS",
+            "/api/budgets - Gerenciar orçamentos salvos (CRUD)",
+            "/api/budgets/{budget_id} - Operações específicas por ID",
+            "/api/budgets/link/{custom_link} - Acessar por link personalizado"
         ]
     }
+
+# ===================== BUDGET MANAGEMENT ENDPOINTS =====================
+
+@app.post("/api/budgets/save")
+async def save_budget(request: BudgetRequestModel, custom_link: Optional[str] = None):
+    """Salva um orçamento para edição futura"""
+    try:
+        # Converte para dataclass
+        budget_request = BudgetRequest(
+            client_name=request.client_name,
+            client_email=request.client_email,
+            client_phone=request.client_phone,
+            property_name=request.property_name,
+            state=request.state,
+            city=request.city,
+            vertices_count=request.vertices_count,
+            property_area=request.property_area,
+            client_type=request.client_type,
+            is_urgent=request.is_urgent,
+            includes_topography=request.includes_topography,
+            includes_environmental=request.includes_environmental,
+            additional_notes=request.additional_notes
+        )
+        
+        # Calcula orçamento
+        if budget_calculator:
+            budget_result = budget_calculator.calculate_budget(budget_request)
+        else:
+            budget_result = {
+                "success": True,
+                "total_cost": 5000.0,
+                "message": "Orçamento calculado (modo simplificado)"
+            }
+        
+        # Salva no budget manager
+        budget_id = budget_manager.create_budget(
+            budget_request=asdict(budget_request),
+            budget_result=budget_result,
+            custom_link=custom_link
+        )
+        
+        return {
+            "success": True,
+            "budget_id": budget_id,
+            "custom_link": custom_link,
+            "budget_result": budget_result,
+            "message": "Orçamento salvo com sucesso"
+        }
+        
+    except Exception as e:
+        logger.error(f"Erro ao salvar orçamento: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+@app.get("/api/budgets")
+async def list_budgets(limit: int = 50, status: str = "active"):
+    """Lista orçamentos salvos"""
+    try:
+        budgets = budget_manager.list_budgets(limit=limit, status=status)
+        return {
+            "success": True,
+            "budgets": budgets,
+            "count": len(budgets)
+        }
+    except Exception as e:
+        logger.error(f"Erro ao listar orçamentos: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+@app.get("/api/budgets/{budget_id}")
+async def get_budget(budget_id: str):
+    """Recupera um orçamento específico pelo ID"""
+    try:
+        budget = budget_manager.get_budget(budget_id)
+        if not budget:
+            raise HTTPException(status_code=404, detail="Orçamento não encontrado")
+        
+        return {
+            "success": True,
+            "budget": budget
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao buscar orçamento: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+@app.get("/api/budgets/link/{custom_link}")
+async def get_budget_by_link(custom_link: str):
+    """Recupera um orçamento pelo link personalizado"""
+    try:
+        budget = budget_manager.get_budget_by_link(custom_link)
+        if not budget:
+            raise HTTPException(status_code=404, detail="Link não encontrado")
+        
+        return {
+            "success": True,
+            "budget": budget
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao buscar orçamento por link: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+@app.put("/api/budgets/{budget_id}")
+async def update_budget(budget_id: str, request: BudgetRequestModel):
+    """Atualiza um orçamento existente"""
+    try:
+        # Verifica se orçamento existe
+        existing_budget = budget_manager.get_budget(budget_id)
+        if not existing_budget:
+            raise HTTPException(status_code=404, detail="Orçamento não encontrado")
+        
+        # Converte para dataclass
+        budget_request = BudgetRequest(
+            client_name=request.client_name,
+            client_email=request.client_email,
+            client_phone=request.client_phone,
+            property_name=request.property_name,
+            state=request.state,
+            city=request.city,
+            vertices_count=request.vertices_count,
+            property_area=request.property_area,
+            client_type=request.client_type,
+            is_urgent=request.is_urgent,
+            includes_topography=request.includes_topography,
+            includes_environmental=request.includes_environmental,
+            additional_notes=request.additional_notes
+        )
+        
+        # Recalcula orçamento
+        if budget_calculator:
+            budget_result = budget_calculator.calculate_budget(budget_request)
+        else:
+            budget_result = {
+                "success": True,
+                "total_cost": 5000.0,
+                "message": "Orçamento recalculado (modo simplificado)"
+            }
+        
+        # Atualiza no budget manager
+        success = budget_manager.update_budget(
+            budget_id=budget_id,
+            budget_request=asdict(budget_request),
+            budget_result=budget_result
+        )
+        
+        if not success:
+            raise HTTPException(status_code=404, detail="Falha ao atualizar orçamento")
+        
+        return {
+            "success": True,
+            "budget_id": budget_id,
+            "budget_result": budget_result,
+            "message": "Orçamento atualizado com sucesso"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao atualizar orçamento: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+@app.put("/api/budgets/{budget_id}/link")
+async def set_custom_link(budget_id: str, custom_link: str):
+    """Define um link personalizado para o orçamento"""
+    try:
+        # Validação básica do link
+        if not custom_link or len(custom_link) < 3:
+            raise HTTPException(status_code=400, detail="Link deve ter pelo menos 3 caracteres")
+        
+        # Remove caracteres especiais e espaços
+        import re
+        clean_link = re.sub(r'[^a-zA-Z0-9\-_]', '', custom_link)
+        if not clean_link:
+            raise HTTPException(status_code=400, detail="Link contém caracteres inválidos")
+        
+        success = budget_manager.set_custom_link(budget_id, clean_link)
+        if not success:
+            # Verifica se é porque o orçamento não existe ou link já existe
+            if not budget_manager.get_budget(budget_id):
+                raise HTTPException(status_code=404, detail="Orçamento não encontrado")
+            else:
+                raise HTTPException(status_code=409, detail="Link já está em uso")
+        
+        return {
+            "success": True,
+            "budget_id": budget_id,
+            "custom_link": clean_link,
+            "message": "Link personalizado definido com sucesso"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao definir link personalizado: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+@app.delete("/api/budgets/{budget_id}")
+async def delete_budget(budget_id: str):
+    """Remove um orçamento"""
+    try:
+        success = budget_manager.delete_budget(budget_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Orçamento não encontrado")
+        
+        return {
+            "success": True,
+            "message": "Orçamento removido com sucesso"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao remover orçamento: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

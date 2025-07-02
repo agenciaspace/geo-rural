@@ -28,7 +28,10 @@
       "Bash(git rm:*)",
       "Bash(mv:*)",
       "Bash(git pull:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(python:*)",
+      "Bash(railway status:*)",
+      "Bash(railway logs:*)"
     ],
     "deny": []
   }

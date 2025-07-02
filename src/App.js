@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import BudgetSimulator from './components/BudgetSimulator';
+import BudgetManager from './components/BudgetManager';
 import GnssUploader from './components/GnssUploader';
 import Dashboard from './components/Dashboard';
 import LandingPage from './components/LandingPage';
@@ -122,6 +123,12 @@ function App() {
             💰 Simulador de Orçamento
           </button>
           <button 
+            className={`nav-tab ${activeTab === 'budgetManager' ? 'active' : ''}`}
+            onClick={() => setActiveTab('budgetManager')}
+          >
+            📋 Gerenciar Orçamentos
+          </button>
+          <button 
             className={`nav-tab ${activeTab === 'gnss' ? 'active' : ''}`}
             onClick={() => setActiveTab('gnss')}
           >
@@ -131,6 +138,7 @@ function App() {
         
         {activeTab === 'dashboard' && <Dashboard />}
         {activeTab === 'budget' && <BudgetSimulator />}
+        {activeTab === 'budgetManager' && <BudgetManager />}
         {activeTab === 'gnss' && <GnssUploader />}
       </div>
     </div>
