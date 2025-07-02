@@ -131,7 +131,10 @@ const BudgetHub = () => {
       const saveResult = await saveResponse.json();
 
       if (saveResult.success) {
-        setSuccess(`Orçamento criado com sucesso! ID: ${saveResult.budget_id}`);
+        const linkMessage = saveResult.custom_link ? 
+          `Link automático: ${saveResult.custom_link}` : 
+          `ID: ${saveResult.budget_id}`;
+        setSuccess(`✅ Orçamento criado com sucesso! ${linkMessage}`);
         resetForm();
         setActiveView('list');
         loadBudgets();
@@ -207,16 +210,19 @@ const BudgetHub = () => {
     }
   };
 
-  const handleCreateCustomLink = async (budgetId) => {
-    const customLink = prompt('Digite um nome para o link personalizado (apenas letras, números, - e _):');
-    if (!customLink) return;
+  const handleEditCustomLink = async (budgetId, currentLink) => {
+    const newCustomLink = prompt(
+      `Link atual: ${currentLink}\n\nDigite um novo nome para o link personalizado (apenas letras, números, - e _):`,
+      currentLink
+    );
+    if (!newCustomLink || newCustomLink === currentLink) return;
 
     try {
       setIsLoading(true);
       const response = await fetch(`/api/budgets/${budgetId}/link`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ custom_link: customLink })
+        body: JSON.stringify({ custom_link: newCustomLink })
       });
 
       const result = await response.json();
@@ -224,16 +230,22 @@ const BudgetHub = () => {
       if (result.success) {
         const fullLink = `${window.location.origin}/budget/${result.custom_link}`;
         navigator.clipboard.writeText(fullLink);
-        setSuccess(`Link criado e copiado: ${result.custom_link}`);
+        setSuccess(`Link atualizado e copiado: ${result.custom_link}`);
         loadBudgets();
       } else {
-        throw new Error(result.detail || 'Erro ao criar link');
+        throw new Error(result.detail || 'Erro ao atualizar link');
       }
     } catch (err) {
       setError(err.message);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleCopyLink = (customLink) => {
+    const fullLink = `${window.location.origin}/budget/${customLink}`;
+    navigator.clipboard.writeText(fullLink);
+    setSuccess(`Link copiado: ${customLink}`);
   };
 
   const formatCurrency = (value) => {
@@ -388,11 +400,9 @@ const BudgetHub = () => {
                       <div style={{ fontSize: '0.8rem', color: '#999', marginTop: '0.5rem' }}>
                         📅 {formatDate(budget.created_at)}
                       </div>
-                      {budget.custom_link && (
-                        <div style={{ fontSize: '0.8rem', color: '#007bff', marginTop: '0.5rem' }}>
-                          🔗 Link: {budget.custom_link}
-                        </div>
-                      )}
+                      <div style={{ fontSize: '0.8rem', color: '#007bff', marginTop: '0.5rem' }}>
+                        🔗 Link: {budget.custom_link || 'Não disponível'}
+                      </div>
                     </div>
                     
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -416,7 +426,22 @@ const BudgetHub = () => {
                       </button>
                       
                       <button
-                        onClick={() => handleCreateCustomLink(budget.id)}
+                        onClick={() => handleCopyLink(budget.custom_link)}
+                        style={{
+                          background: '#28a745',
+                          color: 'white',
+                          border: 'none',
+                          padding: '0.5rem',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '0.8rem'
+                        }}
+                      >
+                        📋 Copiar
+                      </button>
+                      
+                      <button
+                        onClick={() => handleEditCustomLink(budget.id, budget.custom_link)}
                         style={{
                           background: '#17a2b8',
                           color: 'white',
@@ -427,7 +452,7 @@ const BudgetHub = () => {
                           fontSize: '0.8rem'
                         }}
                       >
-                        🔗 Link
+                        🔗 Editar Link
                       </button>
                       
                       <button

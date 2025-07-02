@@ -166,10 +166,34 @@ class BudgetManager:
         with open(self.budgets_file, 'w') as f:
             json.dump(budgets, f, indent=2, ensure_ascii=False)
     
+    def _generate_next_sequential_link(self) -> str:
+        """Gera o próximo link sequencial automaticamente"""
+        budgets = self._load_budgets()
+        
+        # Encontra o maior número sequencial existente
+        max_number = 0
+        for budget in budgets.values():
+            custom_link = budget.get('custom_link', '')
+            if custom_link.startswith('orcamento-'):
+                try:
+                    number = int(custom_link.split('-')[1])
+                    max_number = max(max_number, number)
+                except (ValueError, IndexError):
+                    continue
+        
+        # Retorna o próximo número na sequência
+        next_number = max_number + 1
+        return f"orcamento-{next_number:04d}"  # Ex: orcamento-0001, orcamento-0002
+
     def create_budget(self, budget_request: Dict[str, Any], budget_result: Dict[str, Any], custom_link: Optional[str] = None) -> str:
         """Cria um novo orçamento salvo"""
         budget_id = str(uuid.uuid4())
         now = dt.now().isoformat()
+        
+        # Se não foi fornecido um link personalizado, gera um automaticamente
+        if not custom_link:
+            custom_link = self._generate_next_sequential_link()
+            logger.info(f"Generated automatic sequential link: {custom_link}")
         
         saved_budget = SavedBudget(
             id=budget_id,
@@ -185,6 +209,7 @@ class BudgetManager:
         budgets[budget_id] = asdict(saved_budget)
         self._save_budgets(budgets)
         
+        logger.info(f"Budget created with ID: {budget_id}, Link: {custom_link}")
         return budget_id
     
     def get_budget(self, budget_id: str) -> Optional[Dict[str, Any]]:
@@ -1780,12 +1805,16 @@ async def save_budget(request: BudgetRequestModel, custom_link: Optional[str] = 
             custom_link=custom_link
         )
         
+        # Recupera o orçamento salvo para obter o link gerado automaticamente
+        saved_budget = budget_manager.get_budget(budget_id)
+        generated_link = saved_budget.get('custom_link') if saved_budget else custom_link
+        
         return {
             "success": True,
             "budget_id": budget_id,
-            "custom_link": custom_link,
+            "custom_link": generated_link,
             "budget_result": budget_result,
-            "message": "Orçamento salvo com sucesso"
+            "message": f"Orçamento salvo com sucesso! Link: {generated_link}"
         }
         
     except Exception as e:

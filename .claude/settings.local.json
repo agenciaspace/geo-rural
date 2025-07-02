@@ -39,7 +39,8 @@
       "Bash(RAILWAY_SKIP_SSL_VERIFY=true railway whoami)",
       "Bash(NODE_TLS_REJECT_UNAUTHORIZED=0 railway whoami)",
       "Bash(cp:*)",
-      "Bash(railway:*)"
+      "Bash(railway:*)",
+      "Bash(git fetch:*)"
     ],
     "deny": []
   }
