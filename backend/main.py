@@ -17,6 +17,10 @@ from pathlib import Path
 from typing import Dict, Any, Tuple, Optional, List
 from dataclasses import dataclass, asdict
 
+# Configuração de logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Supabase
 try:
     from supabase import create_client, Client
@@ -34,10 +38,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel
-
-# Configuração de logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 class UploadSizeMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, max_upload_size: int = 500 * 1024 * 1024):  # 500MB para Railway
