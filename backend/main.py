@@ -964,7 +964,7 @@ async def generate_gnss_report_pdf(gnss_data: dict):
             # Retorna o arquivo PDF
             return FileResponse(
                 path=pdf_path,
-                filename=f"relatorio_gnss_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                filename=f"relatorio_gnss_{dt.now().strftime('%Y%m%d_%H%M%S')}.pdf",
                 media_type="application/pdf"
             )
         else:

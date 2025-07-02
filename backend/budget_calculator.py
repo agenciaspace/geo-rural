@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime as dt
 from typing import Dict, Any
 from dataclasses import dataclass
 
@@ -126,6 +126,6 @@ class BudgetCalculator:
             "total_price": round(total, 2),
             "breakdown": breakdown,
             "estimated_days": base_days,
-            "generated_at": datetime.now().isoformat(),
+            "generated_at": dt.now().isoformat(),
             "request_data": request.__dict__
         }

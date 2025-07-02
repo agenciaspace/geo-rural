@@ -6,7 +6,7 @@ Implementa processamento PPP (Precise Point Positioning) e cálculo de coordenad
 
 import numpy as np
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime as dt, timedelta
 import logging
 from typing import Dict, List, Tuple, Any, Optional
 import math
@@ -889,7 +889,7 @@ class GNSSProcessor:
                 'residuals': residuals,
                 'satellites': ['G23', 'G31', 'G05', 'G29', 'G25', 'G28', 'G26', 'G12', 'G18', 'G15', 'R14', 'R02', 'R13', 'R12', 'R24', 'R23', 'R17', 'G11'],
                 'success': True,
-                'time': datetime.now() + timedelta(seconds=i)  # Timestamps simulados
+                'time': dt.now() + timedelta(seconds=i)  # Timestamps simulados
             })
             
             # Log de progresso realista a cada 500 épocas

@@ -4,7 +4,7 @@ from reportlab.lib.units import cm
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
-from datetime import datetime
+from datetime import datetime as dt
 import os
 import tempfile
 from typing import Dict, Any, Optional
@@ -53,7 +53,7 @@ class PDFGenerator:
         """Gera PDF da proposta de orçamento"""
         
         if filename is None:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
             filename = f"proposta_precizu_{timestamp}.pdf"
         
         # Cria arquivo temporário
@@ -196,7 +196,7 @@ class PDFGenerator:
         story.append(Paragraph("Precizu", self.styles['BodyStyle']))
         story.append(Paragraph("Engenharia e Georreferenciamento", self.styles['BodyStyle']))
         
-        generation_date = datetime.now().strftime("%d/%m/%Y às %H:%M")
+        generation_date = dt.now().strftime("%d/%m/%Y às %H:%M")
         story.append(Spacer(1, 10))
         story.append(Paragraph(f"Proposta gerada em {generation_date}", 
                               ParagraphStyle(name='Footer', parent=self.styles['Normal'], 
@@ -211,7 +211,7 @@ class PDFGenerator:
         """Gera PDF do relatório técnico GNSS"""
         
         if not filename:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
             filename = f"relatorio_gnss_{timestamp}.pdf"
         
         # Cria arquivo temporário
@@ -242,7 +242,7 @@ class PDFGenerator:
         story.append(Paragraph("INFORMAÇÕES GERAIS", self.styles['SubtitleStyle']))
         
         # Data da análise
-        analysis_date = datetime.now().strftime("%d/%m/%Y às %H:%M")
+        analysis_date = dt.now().strftime("%d/%m/%Y às %H:%M")
         
         general_info = [
             ["Data da Análise:", analysis_date],
@@ -435,7 +435,7 @@ class PDFGenerator:
         story.append(Paragraph("Precizu - Processamento Geodésico Completo", self.styles['BodyStyle']))
         story.append(Paragraph("Sistema homologado para georreferenciamento rural", self.styles['BodyStyle']))
         
-        generation_date = datetime.now().strftime("%d/%m/%Y às %H:%M")
+        generation_date = dt.now().strftime("%d/%m/%Y às %H:%M")
         story.append(Spacer(1, 10))
         story.append(Paragraph(f"Relatório gerado em {generation_date}", 
                               ParagraphStyle(name='Footer', parent=self.styles['Normal'], 
