@@ -133,8 +133,12 @@ const BudgetManager = () => {
 
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/budgets/${selectedBudget.id}/link?custom_link=${encodeURIComponent(customLink)}`, {
-        method: 'PUT'
+      const response = await fetch(`/api/budgets/${selectedBudget.id}/link`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ custom_link: customLink })
       });
 
       const data = await response.json();

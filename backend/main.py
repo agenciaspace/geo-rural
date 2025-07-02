@@ -237,6 +237,9 @@ class BudgetRequestModel(BaseModel):
     includes_environmental: bool = False
     additional_notes: str = ""
 
+class CustomLinkModel(BaseModel):
+    custom_link: str
+
 def analyze_rinex_file(file_path: str) -> Dict[str, Any]:
     """Analisa arquivo RINEX e retorna parecer técnico com processamento geodésico completo"""
     try:
@@ -1542,20 +1545,30 @@ async def upload_gnss_file(file: UploadFile = File(...)):
 
 # Imports para budget calculator e pdf generator
 try:
-    from budget_calculator import BudgetCalculator
+    from .budget_calculator import BudgetCalculator
     budget_calculator = BudgetCalculator()
     logger.info("Budget calculator loaded")
 except ImportError:
-    logger.warning("Budget calculator not available")
-    budget_calculator = None
+    try:
+        from budget_calculator import BudgetCalculator
+        budget_calculator = BudgetCalculator()
+        logger.info("Budget calculator loaded")
+    except ImportError:
+        logger.warning("Budget calculator not available")
+        budget_calculator = None
 
 try:
-    from pdf_generator import PDFGenerator
+    from .pdf_generator import PDFGenerator
     pdf_generator = PDFGenerator()
     logger.info("PDF generator loaded")
 except ImportError:
-    logger.warning("PDF generator not available")
-    pdf_generator = None
+    try:
+        from pdf_generator import PDFGenerator
+        pdf_generator = PDFGenerator()
+        logger.info("PDF generator loaded")
+    except ImportError:
+        logger.warning("PDF generator not available")
+        pdf_generator = None
 
 # Inicializar Budget Manager
 budget_manager = BudgetManager()
@@ -1622,9 +1635,15 @@ async def generate_proposal_pdf(request: BudgetRequestModel):
         
         # Calcula orçamento
         if budget_calculator:
-            budget_data = budget_calculator.calculate_budget(budget_request)
+            budget_result = budget_calculator.calculate_budget(budget_request)
         else:
-            budget_data = {"total_cost": 5000.0}
+            budget_result = {"total_cost": 5000.0}
+        
+        # Prepara dados para PDF
+        budget_data = {
+            'request_data': asdict(budget_request),
+            'budget_result': budget_result
+        }
         
         # Gera PDF
         if pdf_generator:
@@ -1905,9 +1924,11 @@ async def update_budget(budget_id: str, request: BudgetRequestModel):
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 @app.put("/api/budgets/{budget_id}/link")
-async def set_custom_link(budget_id: str, custom_link: str):
+async def set_custom_link(budget_id: str, link_data: CustomLinkModel):
     """Define um link personalizado para o orçamento"""
     try:
+        custom_link = link_data.custom_link
+        
         # Validação básica do link
         if not custom_link or len(custom_link) < 3:
             raise HTTPException(status_code=400, detail="Link deve ter pelo menos 3 caracteres")
