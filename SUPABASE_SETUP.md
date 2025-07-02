@@ -10,23 +10,27 @@ Este guia explica como configurar o Supabase para persistência de dados do GeoR
 
 ## 🛠️ Configuração Passo a Passo
 
-### 1. **Executar Scripts de Schema**
+### 1. **Executar Script de Configuração**
 
-Execute os scripts na seguinte ordem no SQL Editor do Supabase:
+**⚡ SOLUÇÃO RÁPIDA:** Execute apenas um script que resolve tudo:
 
-#### **Se for uma instalação nova:**
 ```sql
--- Execute o arquivo: supabase/schema_safe.sql
--- Este script cria todas as tabelas e estruturas necessárias
+-- Execute o arquivo: supabase/complete_setup.sql
+-- Este script funciona para instalações novas E existentes
+-- Ele detecta automaticamente o que precisa ser feito
 ```
 
-#### **Se já tem tabelas existentes:**
-```sql
--- 1. Primeiro, execute: supabase/fix_indexes.sql
--- (Remove conflitos de índices)
+#### **Scripts Alternativos (se preferir):**
 
--- 2. Depois, execute: supabase/migrate_budgets.sql  
--- (Migra dados para nova estrutura)
+**Para instalação nova:**
+```sql
+-- Execute: supabase/schema_safe.sql
+```
+
+**Para instalação existente com problemas:**
+```sql
+-- 1. Execute: supabase/fix_indexes.sql
+-- 2. Execute: supabase/migrate_budgets.sql  
 ```
 
 ### 2. **Configurar Variáveis de Ambiente**
