@@ -160,18 +160,6 @@ const GnssUploader = () => {
     setError(null);
   };
 
-  const downloadDocument = (docType) => {
-    // Simular download de documentos (será implementado quando o backend gerar documentos reais)
-    const documents = {
-      memorial: 'Memorial_Descritivo_GNSS.pdf',
-      tabela: 'Tabela_Coordenadas_GNSS.xlsx',
-      sigef: 'Planilha_SIGEF_GNSS.xlsx',
-      planta: 'Planta_Tecnica_GNSS.pdf',
-      relatorio: 'Relatorio_Qualidade_GNSS.pdf'
-    };
-    
-    alert(`Download iniciado: ${documents[docType]} (funcionalidade em desenvolvimento)`);
-  };
 
   const generatePDFAutomatically = async (fileInfo) => {
     try {
@@ -604,21 +592,6 @@ const GnssUploader = () => {
               {isLoading ? '⏳ Gerando...' : '📄 Gerar PDF'}
             </button>
             
-            <button 
-              onClick={() => downloadDocument('relatorio')}
-              style={{
-                background: '#f8f9fa',
-                color: '#6c757d',
-                border: '2px solid #dee2e6',
-                padding: '1rem 2rem',
-                borderRadius: '8px',
-                fontSize: '1rem',
-                fontWeight: '600',
-                cursor: 'pointer'
-              }}
-            >
-              📥 Download Relatório
-            </button>
           </div>
         </div>
       )}

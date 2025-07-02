@@ -1525,6 +1525,7 @@ async def generate_gnss_report_pdf(gnss_data: dict):
         # Gera PDF
         if pdf_generator:
             # Prepara dados para formatação do PDF
+            # gnss_data já é o file_info do frontend, então envolvemos corretamente
             formatted_data = {
                 'file_info': gnss_data
             }
@@ -1541,7 +1542,11 @@ async def generate_gnss_report_pdf(gnss_data: dict):
             raise HTTPException(status_code=503, detail="PDF generator não disponível")
             
     except Exception as e:
+        import traceback
+        error_traceback = traceback.format_exc()
         logger.error(f"Erro na geração de PDF do relatório GNSS: {str(e)}")
+        logger.error(f"Traceback completo: {error_traceback}")
+        logger.error(f"Dados recebidos: {gnss_data}")
         raise HTTPException(status_code=500, detail=f"Erro na geração de PDF: {str(e)}")
 
 @app.get("/api/info")
