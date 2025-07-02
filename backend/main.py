@@ -112,24 +112,53 @@ class SavedBudget:
     status: str = "active"  # "active", "archived", "expired"
 
 class BudgetManager:
-    def __init__(self, storage_dir: str = "data"):
+    def __init__(self, storage_dir: str = None):
+        if storage_dir is None:
+            # Use environment variable or default to current directory + data
+            storage_dir = os.getenv('BUDGET_STORAGE_DIR', 'data')
+        
         self.storage_dir = Path(storage_dir)
-        self.storage_dir.mkdir(exist_ok=True)
+        try:
+            self.storage_dir.mkdir(exist_ok=True)
+            logger.info(f"Budget storage directory: {self.storage_dir.absolute()}")
+        except Exception as e:
+            logger.warning(f"Could not create storage directory {self.storage_dir}: {e}")
+            # Fallback to temp directory
+            self.storage_dir = Path(tempfile.gettempdir()) / "precizu_budgets"
+            self.storage_dir.mkdir(exist_ok=True)
+            logger.info(f"Using fallback storage directory: {self.storage_dir.absolute()}")
+        
         self.budgets_file = self.storage_dir / "budgets.json"
         self._ensure_storage()
     
     def _ensure_storage(self):
         """Garante que o arquivo de storage existe"""
-        if not self.budgets_file.exists():
-            with open(self.budgets_file, 'w') as f:
-                json.dump({}, f)
+        try:
+            if not self.budgets_file.exists():
+                with open(self.budgets_file, 'w') as f:
+                    json.dump({}, f)
+                logger.info(f"Created budgets storage file: {self.budgets_file}")
+            else:
+                logger.info(f"Budget storage file exists: {self.budgets_file}")
+        except Exception as e:
+            logger.error(f"Error ensuring storage: {e}")
+            raise
     
     def _load_budgets(self) -> Dict[str, Dict]:
         """Carrega todos os orçamentos do storage"""
         try:
             with open(self.budgets_file, 'r') as f:
-                return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
+                data = json.load(f)
+                logger.debug(f"Loaded {len(data)} budgets from storage")
+                return data
+        except FileNotFoundError:
+            logger.warning(f"Budgets file not found: {self.budgets_file}")
+            return {}
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in budgets file: {e}")
+            return {}
+        except Exception as e:
+            logger.error(f"Error loading budgets: {e}")
             return {}
     
     def _save_budgets(self, budgets: Dict[str, Dict]):
@@ -186,15 +215,26 @@ class BudgetManager:
     
     def list_budgets(self, limit: int = 50, status: str = "active") -> List[Dict[str, Any]]:
         """Lista orçamentos com filtros"""
-        budgets = self._load_budgets()
-        filtered_budgets = [
-            budget for budget in budgets.values() 
-            if budget.get('status') == status
-        ]
-        
-        # Ordena por data de criação (mais recente primeiro)
-        filtered_budgets.sort(key=lambda x: x['created_at'], reverse=True)
-        return filtered_budgets[:limit]
+        try:
+            budgets = self._load_budgets()
+            logger.debug(f"Filtering budgets by status: {status}")
+            
+            filtered_budgets = [
+                budget for budget in budgets.values() 
+                if budget.get('status') == status
+            ]
+            
+            logger.info(f"Found {len(filtered_budgets)} budgets with status '{status}'")
+            
+            # Ordena por data de criação (mais recente primeiro)
+            filtered_budgets.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+            result = filtered_budgets[:limit]
+            
+            logger.info(f"Returning {len(result)} budgets (limit: {limit})")
+            return result
+        except Exception as e:
+            logger.error(f"Error in list_budgets: {e}")
+            raise
     
     def delete_budget(self, budget_id: str) -> bool:
         """Remove um orçamento"""
@@ -1698,15 +1738,44 @@ async def generate_gnss_report_pdf(gnss_data: dict):
 @app.get("/api/info")
 async def api_info():
     """Endpoint com informações da API"""
-    return {
-        "message": "Precizu API",
-        "version": "1.0.0",
-        "endpoints": [
-            "/api/upload-gnss - Upload e análise de arquivos GNSS",
-            "/api/calculate-budget - Calcular orçamento",
-            "/api/generate-proposal-pdf - Gerar PDF da proposta"
-        ]
-    }
+    try:
+        # Test budget manager
+        budget_status = "ok"
+        budget_count = 0
+        storage_path = "unknown"
+        
+        try:
+            budget_count = len(budget_manager._load_budgets())
+            storage_path = str(budget_manager.budgets_file)
+        except Exception as e:
+            budget_status = f"error: {str(e)}"
+        
+        return {
+            "message": "Precizu API",
+            "version": "1.0.0",
+            "status": "running",
+            "budget_manager": {
+                "status": budget_status,
+                "storage_path": storage_path,
+                "budget_count": budget_count
+            },
+            "endpoints": [
+                "/api/upload-gnss - Upload e análise de arquivos GNSS",
+                "/api/calculate-budget - Calcular orçamento",
+                "/api/generate-proposal-pdf - Gerar PDF da proposta",
+                "/api/budgets - Listar orçamentos salvos",
+                "/api/budgets/{id} - Buscar orçamento por ID",
+                "/api/budgets/link/{custom_link} - Acessar por link personalizado"
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Error in api_info: {e}")
+        return {
+            "message": "Precizu API", 
+            "version": "1.0.0",
+            "status": "error",
+            "error": str(e)
+        }
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_react_app():
