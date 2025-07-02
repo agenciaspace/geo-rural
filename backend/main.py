@@ -2054,6 +2054,21 @@ async def delete_budget(budget_id: str):
         logger.error(f"Erro ao remover orçamento: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
+# Lista dos endpoints disponíveis
+@app.get("/api/endpoints")
+async def api_endpoints():
+    return {
+        "endpoints": [
+            "/api/upload-gnss - Upload e análise de arquivos GNSS",
+            "/api/calculate-budget - Calcular orçamento",
+            "/api/generate-proposal-pdf - Gerar PDF da proposta",
+            "/api/generate-gnss-report-pdf - Gerar PDF do relatório técnico GNSS",
+            "/api/budgets - Gerenciar orçamentos salvos (CRUD)",
+            "/api/budgets/{budget_id} - Operações específicas por ID",
+            "/api/budgets/link/{custom_link} - Acessar por link personalizado"
+        ]
+    }
+
 @app.get("/api/info")
 async def api_info():
     """Endpoint com informações da API"""
@@ -2134,21 +2149,6 @@ async def serve_spa(path: str):
             return HTMLResponse(f.read())
     else:
         raise HTTPException(status_code=404, detail="Frontend not built")
-
-# Lista dos endpoints disponíveis
-@app.get("/api/endpoints")
-async def api_endpoints():
-    return {
-        "endpoints": [
-            "/api/upload-gnss - Upload e análise de arquivos GNSS",
-            "/api/calculate-budget - Calcular orçamento",
-            "/api/generate-proposal-pdf - Gerar PDF da proposta",
-            "/api/generate-gnss-report-pdf - Gerar PDF do relatório técnico GNSS",
-            "/api/budgets - Gerenciar orçamentos salvos (CRUD)",
-            "/api/budgets/{budget_id} - Operações específicas por ID",
-            "/api/budgets/link/{custom_link} - Acessar por link personalizado"
-        ]
-    }
 
 
 if __name__ == "__main__":
