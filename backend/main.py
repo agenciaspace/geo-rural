@@ -253,8 +253,11 @@ def analyze_rinex_enhanced(file_path: str) -> Dict[str, Any]:
         
         logger.info("Procurando épocas de observação...")
         
-        # Analisa dados de observação linha por linha
-        for i, line in enumerate(lines[13:], start=13):  # Skip header
+        # Analisa dados de observação linha por linha (limitado para performance)
+        max_lines_to_process = min(len(lines), 50000)  # Limita processamento a 50k linhas
+        logger.info(f"Processando {max_lines_to_process} de {len(lines)} linhas para otimização")
+        
+        for i, line in enumerate(lines[13:max_lines_to_process], start=13):  # Skip header
             if not line.strip():
                 continue
                 
@@ -267,6 +270,10 @@ def analyze_rinex_enhanced(file_path: str) -> Dict[str, Any]:
                     logger.info(f"🔍 Época {epoch_count} na linha {i}")
                 elif epoch_count % 1000 == 0:  # Log a cada 1000 épocas
                     logger.info(f"🔄 Processadas {epoch_count} épocas...")
+                    
+                # Para arquivos muito grandes, acelera o processamento
+                if epoch_count > 10000:  # Após 10k épocas, pula algumas linhas
+                    continue
                     
                 # Extrai IDs de satélites desta época
                 satellite_section = line[32:68]  # Seção de satélites na linha de época
@@ -297,8 +304,9 @@ def analyze_rinex_enhanced(file_path: str) -> Dict[str, Any]:
         if epoch_count > 0:
             # Procura timestamps de primeira e última epoch para calcular duração real
             try:
-                # Processa todo o arquivo para encontrar primeira e última época
-                for line in lines[13:]:  # Skip header (termina na linha 12)
+                # Processa amostra do arquivo para encontrar primeira e última época
+                sample_lines = lines[13:min(len(lines), 10000)]  # Amostra de 10k linhas
+                for line in sample_lines:
                     if (line.strip() and len(line) > 29 and line[0] == ' ' and
                         line[1:3].isdigit() and line[4:6].strip().isdigit() and line[7:9].strip().isdigit()):
                         
