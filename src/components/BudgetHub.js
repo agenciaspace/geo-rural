@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 const BudgetHub = () => {
-  const [activeView, setActiveView] = useState('list'); // 'list', 'create', 'edit', 'view'
+  const [activeView, setActiveView] = useState('list'); // 'list', 'create', 'edit', 'view', 'resubmit'
   const [budgets, setBudgets] = useState([]);
   const [selectedBudget, setSelectedBudget] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -248,6 +248,39 @@ const BudgetHub = () => {
         cancelEditingLink();
       } else {
         throw new Error(result.detail || 'Erro ao atualizar link');
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResubmitBudget = async () => {
+    if (!selectedBudget) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/budgets/link/${selectedBudget.custom_link}/resubmit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          vertices_count: parseInt(formData.vertices_count),
+          property_area: parseFloat(formData.property_area)
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setSuccess('✅ Orçamento reenviado com sucesso! O cliente receberá a nova proposta.');
+        setActiveView('list');
+        loadBudgets();
+      } else {
+        throw new Error(result.detail || 'Erro ao reenviar orçamento');
       }
     } catch (err) {
       setError(err.message);
@@ -521,6 +554,27 @@ const BudgetHub = () => {
                         🔗 Editar Link
                       </button>
                       
+                      {budget.status === 'rejected' && (
+                        <button
+                          onClick={() => {
+                            setSelectedBudget(budget);
+                            setFormData(budget.budget_request);
+                            setActiveView('resubmit');
+                          }}
+                          style={{
+                            background: '#fd7e14',
+                            color: 'white',
+                            border: 'none',
+                            padding: '0.5rem',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem'
+                          }}
+                        >
+                          🔄 Reenviar
+                        </button>
+                      )}
+                      
                       <button
                         onClick={() => handleDeleteBudget(budget.id)}
                         style={{
@@ -544,10 +598,44 @@ const BudgetHub = () => {
         </div>
       )}
 
-      {/* Create/Edit Form */}
-      {(activeView === 'create' || activeView === 'edit') && (
+      {/* Create/Edit/Resubmit Form */}
+      {(activeView === 'create' || activeView === 'edit' || activeView === 'resubmit') && (
         <div>
-          <h3>{activeView === 'create' ? '➕ Criar Novo Orçamento' : '✏️ Editar Orçamento'}</h3>
+          <h3>
+            {activeView === 'create' ? '➕ Criar Novo Orçamento' : 
+             activeView === 'edit' ? '✏️ Editar Orçamento' : 
+             '🔄 Reenviar Orçamento Rejeitado'}
+          </h3>
+          
+          {activeView === 'resubmit' && (
+            <div style={{
+              background: '#fff3cd',
+              border: '1px solid #ffeaa7',
+              borderRadius: '6px',
+              padding: '1rem',
+              marginBottom: '1.5rem'
+            }}>
+              <div style={{ fontWeight: 'bold', color: '#856404', marginBottom: '0.5rem' }}>
+                📋 Reenvio de Orçamento
+              </div>
+              <div style={{ fontSize: '0.9rem', color: '#856404' }}>
+                Você está reenviando um orçamento rejeitado. Faça os ajustes necessários nos dados abaixo 
+                e clique em "Reenviar Orçamento" para submeter uma nova versão ao cliente.
+              </div>
+              {selectedBudget?.rejection_comment && (
+                <div style={{
+                  marginTop: '0.5rem',
+                  padding: '0.5rem',
+                  background: '#f8d7da',
+                  borderRadius: '4px',
+                  fontSize: '0.8rem',
+                  color: '#721c24'
+                }}>
+                  <strong>Motivo da rejeição anterior:</strong> "{selectedBudget.rejection_comment}"
+                </div>
+              )}
+            </div>
+          )}
           
           <div style={{ display: 'grid', gap: '1rem' }}>
             <h4>👤 Dados do Cliente</h4>
@@ -722,11 +810,18 @@ const BudgetHub = () => {
 
             <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
               <button
-                onClick={activeView === 'create' ? handleCreateBudget : handleEditBudget}
+                onClick={
+                  activeView === 'create' ? handleCreateBudget :
+                  activeView === 'edit' ? handleEditBudget :
+                  handleResubmitBudget
+                }
                 disabled={!isFormValid() || isLoading}
                 style={{
-                  background: activeView === 'create' ? '#28a745' : '#ffc107',
-                  color: activeView === 'create' ? 'white' : 'black',
+                  background: 
+                    activeView === 'create' ? '#28a745' :
+                    activeView === 'edit' ? '#ffc107' :
+                    '#fd7e14',
+                  color: activeView === 'edit' ? 'black' : 'white',
                   border: 'none',
                   padding: '1rem 2rem',
                   borderRadius: '6px',
@@ -736,7 +831,10 @@ const BudgetHub = () => {
                   opacity: isFormValid() && !isLoading ? 1 : 0.6
                 }}
               >
-                {isLoading ? '⏳ Processando...' : (activeView === 'create' ? '💾 Criar Orçamento' : '💾 Salvar Alterações')}
+                {isLoading ? '⏳ Processando...' : 
+                 activeView === 'create' ? '💾 Criar Orçamento' :
+                 activeView === 'edit' ? '💾 Salvar Alterações' :
+                 '🔄 Reenviar Orçamento'}
               </button>
               
               <button

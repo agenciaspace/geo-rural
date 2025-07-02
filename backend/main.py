@@ -314,6 +314,53 @@ class BudgetManager:
                 return True
         return False
 
+    def resubmit_budget_by_link(self, custom_link: str, updated_budget_request: Dict[str, Any], updated_budget_result: Dict[str, Any]) -> bool:
+        """Reenvia um orçamento rejeitado com ajustes"""
+        budgets = self._load_budgets()
+        for budget_id, budget in budgets.items():
+            if budget.get('custom_link') == custom_link:
+                # Só permite reenvio se estiver rejeitado
+                if budget.get('status') != 'rejected':
+                    return False
+                
+                # Salva versão anterior no histórico
+                if 'version_history' not in budget:
+                    budget['version_history'] = []
+                
+                budget['version_history'].append({
+                    'version': len(budget['version_history']) + 1,
+                    'budget_request': budget['budget_request'].copy(),
+                    'budget_result': budget['budget_result'].copy(),
+                    'status': budget['status'],
+                    'rejection_date': budget.get('rejection_date'),
+                    'rejection_comment': budget.get('rejection_comment'),
+                    'updated_at': budget['updated_at']
+                })
+                
+                # Atualiza com nova versão
+                budget['budget_request'] = updated_budget_request
+                budget['budget_result'] = updated_budget_result
+                budget['status'] = 'resubmitted'
+                budget['resubmitted_date'] = dt.now().isoformat()
+                budget['updated_at'] = dt.now().isoformat()
+                
+                # Remove dados de rejeição anterior
+                budget.pop('rejection_date', None)
+                budget.pop('rejection_comment', None)
+                
+                self._save_budgets(budgets)
+                logger.info(f"Budget resubmitted via link: {custom_link}")
+                return True
+        return False
+
+    def get_budget_history(self, custom_link: str) -> Optional[List[Dict[str, Any]]]:
+        """Recupera o histórico de versões de um orçamento"""
+        budgets = self._load_budgets()
+        for budget in budgets.values():
+            if budget.get('custom_link') == custom_link:
+                return budget.get('version_history', [])
+        return None
+
 class BudgetRequestModel(BaseModel):
     client_name: str
     client_email: str
@@ -1919,6 +1966,88 @@ async def reject_budget_by_link(custom_link: str, rejection: RejectionModel):
         raise
     except Exception as e:
         logger.error(f"Erro ao rejeitar orçamento: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+@app.post("/api/budgets/link/{custom_link}/resubmit")
+async def resubmit_budget_by_link(custom_link: str, request: BudgetRequestModel):
+    """Reenvia um orçamento rejeitado com ajustes"""
+    try:
+        # Converte para dataclass
+        budget_request = BudgetRequest(
+            client_name=request.client_name,
+            client_email=request.client_email,
+            client_phone=request.client_phone,
+            property_name=request.property_name,
+            state=request.state,
+            city=request.city,
+            vertices_count=request.vertices_count,
+            property_area=request.property_area,
+            client_type=request.client_type,
+            is_urgent=request.is_urgent,
+            includes_topography=request.includes_topography,
+            includes_environmental=request.includes_environmental,
+            additional_notes=request.additional_notes
+        )
+        
+        # Calcula novo orçamento
+        if budget_calculator:
+            budget_result = budget_calculator.calculate_budget(budget_request)
+        else:
+            budget_result = {
+                "success": True,
+                "total_cost": 5000.0,
+                "message": "Orçamento calculado (modo simplificado)"
+            }
+        
+        # Reenvia orçamento
+        success = budget_manager.resubmit_budget_by_link(
+            custom_link,
+            asdict(budget_request),
+            budget_result
+        )
+        
+        if not success:
+            # Verifica se o orçamento existe
+            existing_budget = budget_manager.get_budget_by_link(custom_link)
+            if not existing_budget:
+                raise HTTPException(status_code=404, detail="Link não encontrado")
+            elif existing_budget.get('status') != 'rejected':
+                raise HTTPException(status_code=400, detail="Só é possível reenviar orçamentos rejeitados")
+            else:
+                raise HTTPException(status_code=400, detail="Erro ao reenviar orçamento")
+        
+        return {
+            "success": True,
+            "message": "Orçamento reenviado com sucesso",
+            "custom_link": custom_link,
+            "budget_result": budget_result
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao reenviar orçamento: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+@app.get("/api/budgets/link/{custom_link}/history")
+async def get_budget_history(custom_link: str):
+    """Recupera o histórico de versões de um orçamento"""
+    try:
+        history = budget_manager.get_budget_history(custom_link)
+        if history is None:
+            raise HTTPException(status_code=404, detail="Link não encontrado")
+        
+        return {
+            "success": True,
+            "custom_link": custom_link,
+            "history": history,
+            "version_count": len(history)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao buscar histórico: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 @app.get("/api/budgets/{budget_id}")

@@ -44,6 +44,7 @@ const Dashboard = () => {
       case 'approved': return '#28a745';
       case 'rejected': return '#dc3545';
       case 'active': return '#007bff';
+      case 'resubmitted': return '#ffc107';
       default: return '#6c757d';
     }
   };
@@ -53,6 +54,7 @@ const Dashboard = () => {
       case 'approved': return 'Aprovado';
       case 'rejected': return 'Rejeitado';
       case 'active': return 'Ativo';
+      case 'resubmitted': return 'Reenviado';
       default: return 'Desconhecido';
     }
   };
@@ -90,6 +92,7 @@ const Dashboard = () => {
     const activeCount = budgets.filter(b => b.status === 'active').length;
     const approvedCount = budgets.filter(b => b.status === 'approved').length;
     const rejectedCount = budgets.filter(b => b.status === 'rejected').length;
+    const resubmittedCount = budgets.filter(b => b.status === 'resubmitted').length;
     
     return {
       totalRevenue,
@@ -97,6 +100,7 @@ const Dashboard = () => {
       activeCount,
       approvedCount,
       rejectedCount,
+      resubmittedCount,
       approvalRate: budgets.length > 0 ? ((approvedCount / budgets.length) * 100).toFixed(1) : 0
     };
   };
@@ -231,18 +235,30 @@ const Dashboard = () => {
           <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>
             📈 Status dos Orçamentos
           </div>
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '1rem' }}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#007bff' }}>
+              <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#007bff' }}>
                 {analytics.activeCount}
               </div>
               <div style={{ fontSize: '0.7rem', color: '#999' }}>Ativos</div>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#dc3545' }}>
+              <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#dc3545' }}>
                 {analytics.rejectedCount}
               </div>
               <div style={{ fontSize: '0.7rem', color: '#999' }}>Rejeitados</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#ffc107' }}>
+                {analytics.resubmittedCount}
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#999' }}>Reenviados</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#6c757d' }}>
+                {budgets.length}
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#999' }}>Total</div>
             </div>
           </div>
         </div>
