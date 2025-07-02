@@ -287,6 +287,33 @@ class BudgetManager:
         self._save_budgets(budgets)
         return True
 
+    def approve_budget_by_link(self, custom_link: str) -> bool:
+        """Aprova um orçamento pelo link personalizado"""
+        budgets = self._load_budgets()
+        for budget_id, budget in budgets.items():
+            if budget.get('custom_link') == custom_link:
+                budget['status'] = 'approved'
+                budget['approval_date'] = dt.now().isoformat()
+                budget['updated_at'] = dt.now().isoformat()
+                self._save_budgets(budgets)
+                logger.info(f"Budget approved via link: {custom_link}")
+                return True
+        return False
+
+    def reject_budget_by_link(self, custom_link: str, rejection_comment: str) -> bool:
+        """Rejeita um orçamento pelo link personalizado"""
+        budgets = self._load_budgets()
+        for budget_id, budget in budgets.items():
+            if budget.get('custom_link') == custom_link:
+                budget['status'] = 'rejected'
+                budget['rejection_date'] = dt.now().isoformat()
+                budget['rejection_comment'] = rejection_comment
+                budget['updated_at'] = dt.now().isoformat()
+                self._save_budgets(budgets)
+                logger.info(f"Budget rejected via link: {custom_link}, comment: {rejection_comment}")
+                return True
+        return False
+
 class BudgetRequestModel(BaseModel):
     client_name: str
     client_email: str
@@ -304,6 +331,9 @@ class BudgetRequestModel(BaseModel):
 
 class CustomLinkModel(BaseModel):
     custom_link: str
+
+class RejectionModel(BaseModel):
+    comment: str
 
 def analyze_rinex_file(file_path: str) -> Dict[str, Any]:
     """Analisa arquivo RINEX e retorna parecer técnico com processamento geodésico completo"""
@@ -1853,6 +1883,42 @@ async def get_budget_by_link(custom_link: str):
         raise
     except Exception as e:
         logger.error(f"Erro ao buscar orçamento por link: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+@app.post("/api/budgets/link/{custom_link}/approve")
+async def approve_budget_by_link(custom_link: str):
+    """Aprova um orçamento pelo link personalizado"""
+    try:
+        success = budget_manager.approve_budget_by_link(custom_link)
+        if not success:
+            raise HTTPException(status_code=404, detail="Link não encontrado")
+        
+        return {
+            "success": True,
+            "message": "Orçamento aprovado com sucesso"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao aprovar orçamento: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+@app.post("/api/budgets/link/{custom_link}/reject")
+async def reject_budget_by_link(custom_link: str, rejection: RejectionModel):
+    """Rejeita um orçamento pelo link personalizado"""
+    try:
+        success = budget_manager.reject_budget_by_link(custom_link, rejection.comment)
+        if not success:
+            raise HTTPException(status_code=404, detail="Link não encontrado")
+        
+        return {
+            "success": True,
+            "message": "Orçamento rejeitado com sucesso"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao rejeitar orçamento: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 @app.get("/api/budgets/{budget_id}")

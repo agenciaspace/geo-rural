@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 
-const BudgetViewer = () => {
-  const { customLink } = useParams();
+const BudgetViewer = ({ customLink }) => {
   const [budget, setBudget] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [rejectComment, setRejectComment] = useState('');
+  const [success, setSuccess] = useState(null);
 
   useEffect(() => {
     if (customLink) {
@@ -74,6 +76,67 @@ const BudgetViewer = () => {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       alert('Erro ao gerar PDF. Tente novamente.');
+    }
+  };
+
+  const handleApprove = async () => {
+    if (!window.confirm('Tem certeza que deseja aprovar este orçamento?')) return;
+    
+    try {
+      setIsSubmitting(true);
+      const response = await fetch(`/api/budgets/link/${customLink}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setSuccess('✅ Orçamento aprovado com sucesso! O profissional será notificado.');
+        setBudget(prev => ({ ...prev, status: 'approved', approval_date: new Date().toISOString() }));
+      } else {
+        setError(result.detail || 'Erro ao aprovar orçamento');
+      }
+    } catch (err) {
+      setError('Erro de conexão. Tente novamente.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!rejectComment.trim()) {
+      setError('Por favor, informe o motivo da rejeição');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const response = await fetch(`/api/budgets/link/${customLink}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comment: rejectComment })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setSuccess('❌ Orçamento rejeitado. O profissional será notificado com seus comentários.');
+        setBudget(prev => ({ 
+          ...prev, 
+          status: 'rejected', 
+          rejection_date: new Date().toISOString(),
+          rejection_comment: rejectComment 
+        }));
+        setShowRejectForm(false);
+        setRejectComment('');
+      } else {
+        setError(result.detail || 'Erro ao rejeitar orçamento');
+      }
+    } catch (err) {
+      setError('Erro de conexão. Tente novamente.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -158,6 +221,64 @@ const BudgetViewer = () => {
         </div>
 
         <div style={{ padding: '2rem' }}>
+          
+          {/* Messages */}
+          {error && (
+            <div style={{ 
+              background: '#f8d7da', 
+              color: '#721c24', 
+              padding: '1rem', 
+              borderRadius: '6px', 
+              marginBottom: '2rem',
+              textAlign: 'center'
+            }}>
+              ❌ {error}
+            </div>
+          )}
+
+          {success && (
+            <div style={{ 
+              background: '#d4edda', 
+              color: '#155724', 
+              padding: '1rem', 
+              borderRadius: '6px', 
+              marginBottom: '2rem',
+              textAlign: 'center'
+            }}>
+              {success}
+            </div>
+          )}
+
+          {/* Status do Orçamento */}
+          {budget.status && budget.status !== 'active' && (
+            <div style={{
+              background: budget.status === 'approved' ? '#d4edda' : '#f8d7da',
+              color: budget.status === 'approved' ? '#155724' : '#721c24',
+              padding: '1.5rem',
+              borderRadius: '8px',
+              marginBottom: '2rem',
+              textAlign: 'center',
+              fontSize: '1.1rem',
+              fontWeight: 'bold'
+            }}>
+              {budget.status === 'approved' ? '✅ ORÇAMENTO APROVADO' : '❌ ORÇAMENTO REJEITADO'}
+              {budget.approval_date && (
+                <div style={{ fontSize: '0.9rem', fontWeight: 'normal', marginTop: '0.5rem' }}>
+                  em {new Date(budget.approval_date).toLocaleDateString('pt-BR')}
+                </div>
+              )}
+              {budget.rejection_date && (
+                <div style={{ fontSize: '0.9rem', fontWeight: 'normal', marginTop: '0.5rem' }}>
+                  em {new Date(budget.rejection_date).toLocaleDateString('pt-BR')}
+                  {budget.rejection_comment && (
+                    <div style={{ marginTop: '0.5rem', fontStyle: 'italic' }}>
+                      Motivo: "{budget.rejection_comment}"
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           
           {/* Informações do Cliente */}
           <section style={{ marginBottom: '2rem' }}>
@@ -416,12 +537,136 @@ const BudgetViewer = () => {
             </div>
           </section>
 
-          {/* Ações */}
-          <div style={{ textAlign: 'center' }}>
+          {/* Ações de Aprovação/Rejeição */}
+          {(!budget.status || budget.status === 'active') && (
+            <section style={{ marginBottom: '2rem' }}>
+              <div style={{
+                background: 'linear-gradient(135deg, #f8f9fa, #e9ecef)',
+                padding: '2rem',
+                borderRadius: '12px',
+                border: '2px solid #dee2e6'
+              }}>
+                <h3 style={{ 
+                  color: '#2c5aa0', 
+                  textAlign: 'center',
+                  marginBottom: '1.5rem'
+                }}>
+                  📝 Sua Decisão sobre a Proposta
+                </h3>
+                
+                {!showRejectForm ? (
+                  <div style={{ textAlign: 'center' }}>
+                    <button
+                      onClick={handleApprove}
+                      disabled={isSubmitting}
+                      style={{
+                        background: 'linear-gradient(135deg, #28a745, #20c997)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '1.2rem 2.5rem',
+                        borderRadius: '8px',
+                        fontSize: '1.2rem',
+                        fontWeight: '600',
+                        cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                        marginRight: '1rem',
+                        boxShadow: '0 4px 15px rgba(40, 167, 69, 0.3)',
+                        opacity: isSubmitting ? 0.6 : 1
+                      }}
+                    >
+                      {isSubmitting ? '⏳ Processando...' : '✅ Aprovar Orçamento'}
+                    </button>
+                    <button
+                      onClick={() => setShowRejectForm(true)}
+                      disabled={isSubmitting}
+                      style={{
+                        background: 'linear-gradient(135deg, #dc3545, #c82333)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '1.2rem 2.5rem',
+                        borderRadius: '8px',
+                        fontSize: '1.2rem',
+                        fontWeight: '600',
+                        cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                        boxShadow: '0 4px 15px rgba(220, 53, 69, 0.3)',
+                        opacity: isSubmitting ? 0.6 : 1
+                      }}
+                    >
+                      ❌ Rejeitar Orçamento
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <h4 style={{ color: '#dc3545', marginBottom: '1rem' }}>
+                      Motivo da Rejeição
+                    </h4>
+                    <textarea
+                      value={rejectComment}
+                      onChange={(e) => setRejectComment(e.target.value)}
+                      placeholder="Por favor, informe o motivo da rejeição para que possamos melhorar nossa proposta..."
+                      style={{
+                        width: '100%',
+                        minHeight: '120px',
+                        padding: '1rem',
+                        borderRadius: '6px',
+                        border: '2px solid #dee2e6',
+                        fontSize: '1rem',
+                        marginBottom: '1rem',
+                        resize: 'vertical'
+                      }}
+                    />
+                    <div style={{ textAlign: 'center' }}>
+                      <button
+                        onClick={handleReject}
+                        disabled={isSubmitting || !rejectComment.trim()}
+                        style={{
+                          background: '#dc3545',
+                          color: 'white',
+                          border: 'none',
+                          padding: '1rem 2rem',
+                          borderRadius: '6px',
+                          fontSize: '1rem',
+                          fontWeight: '600',
+                          cursor: (isSubmitting || !rejectComment.trim()) ? 'not-allowed' : 'pointer',
+                          marginRight: '1rem',
+                          opacity: (isSubmitting || !rejectComment.trim()) ? 0.6 : 1
+                        }}
+                      >
+                        {isSubmitting ? '⏳ Enviando...' : '📤 Enviar Rejeição'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowRejectForm(false);
+                          setRejectComment('');
+                          setError(null);
+                        }}
+                        disabled={isSubmitting}
+                        style={{
+                          background: 'transparent',
+                          color: '#6c757d',
+                          border: '2px solid #6c757d',
+                          padding: '1rem 2rem',
+                          borderRadius: '6px',
+                          fontSize: '1rem',
+                          fontWeight: '600',
+                          cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                          opacity: isSubmitting ? 0.6 : 1
+                        }}
+                      >
+                        ❌ Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* Ações Gerais */}
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
             <button
               onClick={generatePDF}
               style={{
-                background: 'linear-gradient(135deg, #dc3545, #c82333)',
+                background: 'linear-gradient(135deg, #6f42c1, #5a32a3)',
                 color: 'white',
                 border: 'none',
                 padding: '1rem 2rem',
@@ -430,7 +675,7 @@ const BudgetViewer = () => {
                 fontWeight: '600',
                 cursor: 'pointer',
                 marginRight: '1rem',
-                boxShadow: '0 4px 15px rgba(220, 53, 69, 0.3)'
+                boxShadow: '0 4px 15px rgba(111, 66, 193, 0.3)'
               }}
             >
               📄 Baixar Proposta em PDF
@@ -454,7 +699,7 @@ const BudgetViewer = () => {
             <button
               onClick={() => window.location.href = '/#budgets'}
               style={{
-                background: '#28a745',
+                background: '#17a2b8',
                 color: 'white',
                 border: 'none',
                 padding: '1rem 2rem',

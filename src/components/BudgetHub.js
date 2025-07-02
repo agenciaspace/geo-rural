@@ -8,6 +8,8 @@ const BudgetHub = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingLink, setEditingLink] = useState(null);
+  const [newLinkValue, setNewLinkValue] = useState('');
 
   // Form data para criação/edição
   const [formData, setFormData] = useState({
@@ -210,19 +212,30 @@ const BudgetHub = () => {
     }
   };
 
-  const handleEditCustomLink = async (budgetId, currentLink) => {
-    const newCustomLink = prompt(
-      `Link atual: ${currentLink}\n\nDigite um novo nome para o link personalizado (apenas letras, números, - e _):`,
-      currentLink
-    );
-    if (!newCustomLink || newCustomLink === currentLink) return;
+  const startEditingLink = (budgetId, currentLink) => {
+    setEditingLink(budgetId);
+    setNewLinkValue(currentLink);
+    setError(null);
+  };
+
+  const cancelEditingLink = () => {
+    setEditingLink(null);
+    setNewLinkValue('');
+    setError(null);
+  };
+
+  const handleSaveCustomLink = async (budgetId) => {
+    if (!newLinkValue.trim() || newLinkValue === budgets.find(b => b.id === budgetId)?.custom_link) {
+      cancelEditingLink();
+      return;
+    }
 
     try {
       setIsLoading(true);
       const response = await fetch(`/api/budgets/${budgetId}/link`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ custom_link: newCustomLink })
+        body: JSON.stringify({ custom_link: newLinkValue.trim() })
       });
 
       const result = await response.json();
@@ -230,8 +243,9 @@ const BudgetHub = () => {
       if (result.success) {
         const fullLink = `${window.location.origin}/budget/${result.custom_link}`;
         navigator.clipboard.writeText(fullLink);
-        setSuccess(`Link atualizado e copiado: ${result.custom_link}`);
+        setSuccess(`✅ Link atualizado e copiado: ${result.custom_link}`);
         loadBudgets();
+        cancelEditingLink();
       } else {
         throw new Error(result.detail || 'Erro ao atualizar link');
       }
@@ -401,7 +415,57 @@ const BudgetHub = () => {
                         📅 {formatDate(budget.created_at)}
                       </div>
                       <div style={{ fontSize: '0.8rem', color: '#007bff', marginTop: '0.5rem' }}>
-                        🔗 Link: {budget.custom_link || 'Não disponível'}
+                        {editingLink === budget.id ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                            <span>🔗 Link:</span>
+                            <input
+                              type="text"
+                              value={newLinkValue}
+                              onChange={(e) => setNewLinkValue(e.target.value)}
+                              style={{
+                                padding: '0.25rem 0.5rem',
+                                border: '1px solid #007bff',
+                                borderRadius: '4px',
+                                fontSize: '0.8rem',
+                                width: '200px'
+                              }}
+                              placeholder="orcamento-personalizado"
+                              autoFocus
+                            />
+                            <button
+                              onClick={() => handleSaveCustomLink(budget.id)}
+                              disabled={isLoading}
+                              style={{
+                                background: '#28a745',
+                                color: 'white',
+                                border: 'none',
+                                padding: '0.25rem 0.5rem',
+                                borderRadius: '4px',
+                                fontSize: '0.7rem',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              ✅
+                            </button>
+                            <button
+                              onClick={cancelEditingLink}
+                              disabled={isLoading}
+                              style={{
+                                background: '#dc3545',
+                                color: 'white',
+                                border: 'none',
+                                padding: '0.25rem 0.5rem',
+                                borderRadius: '4px',
+                                fontSize: '0.7rem',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              ❌
+                            </button>
+                          </div>
+                        ) : (
+                          <span>🔗 Link: {budget.custom_link || 'Não disponível'}</span>
+                        )}
                       </div>
                     </div>
                     
@@ -441,15 +505,17 @@ const BudgetHub = () => {
                       </button>
                       
                       <button
-                        onClick={() => handleEditCustomLink(budget.id, budget.custom_link)}
+                        onClick={() => startEditingLink(budget.id, budget.custom_link)}
+                        disabled={editingLink === budget.id || isLoading}
                         style={{
-                          background: '#17a2b8',
+                          background: editingLink === budget.id ? '#6c757d' : '#17a2b8',
                           color: 'white',
                           border: 'none',
                           padding: '0.5rem',
                           borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '0.8rem'
+                          cursor: (editingLink === budget.id || isLoading) ? 'not-allowed' : 'pointer',
+                          fontSize: '0.8rem',
+                          opacity: (editingLink === budget.id || isLoading) ? 0.6 : 1
                         }}
                       >
                         🔗 Editar Link
