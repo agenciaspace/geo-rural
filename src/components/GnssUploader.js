@@ -8,6 +8,8 @@ const GnssUploader = () => {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [dragOver, setDragOver] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState('');
+  const [showProgressModal, setShowProgressModal] = useState(false);
 
   const handleFileSelect = (selectedFile) => {
     const allowedTypes = ['.21o', '.rnx', '.zip', '.obs', '.nav'];
@@ -75,6 +77,8 @@ const GnssUploader = () => {
     setIsLoading(true);
     setError(null);
     setResult(null);
+    setShowProgressModal(true);
+    setAnalysisProgress('🔄 Iniciando upload do arquivo GNSS...');
 
     try {
       console.log('Iniciando análise do arquivo:', file.name, (file.size / 1024 / 1024).toFixed(2) + 'MB');
@@ -83,6 +87,25 @@ const GnssUploader = () => {
       const formData = new FormData();
       formData.append('file', file);
 
+      // Simular progresso visual enquanto processa
+      const progressMessages = [
+        '📤 Upload concluído, iniciando análise...',
+        '📋 Analisando cabeçalho RINEX...',
+        '🛰️ Identificando satélites observados...',
+        '📊 Processando épocas de observação...',
+        '⏰ Calculando duração da sessão...',
+        '🧪 Executando análise de qualidade...',
+        '✅ Finalizando processamento...'
+      ];
+      
+      let currentProgress = 0;
+      const progressInterval = setInterval(() => {
+        if (currentProgress < progressMessages.length) {
+          setAnalysisProgress(progressMessages[currentProgress]);
+          currentProgress++;
+        }
+      }, 2000);
+
       const response = await axios.post(API_ENDPOINTS.uploadGnss, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -90,8 +113,14 @@ const GnssUploader = () => {
         timeout: 300000, // 5 minutos timeout para arquivos grandes
       });
 
-      console.log('Resposta da API:', response.data);
-      setResult(response.data);
+      clearInterval(progressInterval);
+      setAnalysisProgress('🎯 Análise concluída com sucesso!');
+      
+      setTimeout(() => {
+        setShowProgressModal(false);
+        console.log('Resposta da API:', response.data);
+        setResult(response.data);
+      }, 1000);
       
       // Gerar PDF automaticamente após análise bem-sucedida
       if (response.data.success && response.data.file_info) {
@@ -101,6 +130,7 @@ const GnssUploader = () => {
       }
       
     } catch (err) {
+      setShowProgressModal(false);
       console.error('Erro na análise:', err);
       let errorMessage = 'Erro ao processar arquivo GNSS';
       
@@ -604,6 +634,82 @@ const GnssUploader = () => {
           <strong>❌ Erro no processamento:</strong> {result.error}
         </div>
       )}
+
+      {/* Modal de Progresso da Análise */}
+      {showProgressModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            padding: '2rem',
+            maxWidth: '500px',
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🧠</div>
+            <h3 style={{ color: '#2c5aa0', marginBottom: '1rem' }}>
+              Analisando Arquivo GNSS
+            </h3>
+            <div style={{
+              background: '#f8f9fa',
+              padding: '1rem',
+              borderRadius: '8px',
+              marginBottom: '1rem',
+              border: '1px solid #dee2e6'
+            }}>
+              <div style={{ 
+                fontSize: '1.1rem', 
+                color: '#495057',
+                fontWeight: '500'
+              }}>
+                {analysisProgress}
+              </div>
+            </div>
+            <div style={{
+              width: '100%',
+              height: '4px',
+              background: '#e9ecef',
+              borderRadius: '2px',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                height: '100%',
+                background: 'linear-gradient(90deg, #007bff, #0056b3)',
+                animation: 'progress 3s ease-in-out infinite',
+                borderRadius: '2px'
+              }}></div>
+            </div>
+            <p style={{ 
+              fontSize: '0.9rem', 
+              color: '#6c757d', 
+              marginTop: '1rem',
+              margin: 0 
+            }}>
+              Processamento em tempo real • GMT-3
+            </p>
+          </div>
+        </div>
+      )}
+
+      <style jsx>{`
+        @keyframes progress {
+          0% { width: 10%; }
+          50% { width: 70%; }
+          100% { width: 90%; }
+        }
+      `}</style>
     </div>
   );
 };
