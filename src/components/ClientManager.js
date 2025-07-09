@@ -48,13 +48,14 @@ const ClientManager = () => {
   const loadClients = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/clients');
-      const data = await response.json();
+      setError(null);
       
-      if (data.success) {
-        setClients(data.clients);
+      const { data, error: dbError } = await db.clients.list();
+      
+      if (dbError) {
+        setError('Erro ao carregar clientes: ' + dbError.message);
       } else {
-        setError('Erro ao carregar clientes');
+        setClients(data || []);
       }
     } catch (err) {
       setError('Erro de conexão ao carregar clientes');
@@ -118,21 +119,19 @@ const ClientManager = () => {
     }
 
     try {
-      const response = await fetch('/api/clients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
+      const { data, error: dbError } = await db.clients.create(formData);
+      
+      if (dbError) {
+        throw new Error(dbError.message || 'Erro ao criar cliente');
+      }
+      
+      if (data && data.length > 0) {
         setSuccess('✅ Cliente criado com sucesso!');
         resetForm();
         setActiveView('list');
         loadClients();
       } else {
-        throw new Error(result.detail || 'Erro ao criar cliente');
+        throw new Error('Erro ao criar cliente - dados não retornados');
       }
     } catch (err) {
       setError(err.message);
@@ -148,21 +147,15 @@ const ClientManager = () => {
     setError(null);
 
     try {
-      const response = await fetch(`/api/clients/${selectedClient.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setSuccess('Cliente atualizado com sucesso!');
-        setActiveView('list');
-        loadClients();
-      } else {
-        throw new Error(result.detail || 'Erro ao atualizar cliente');
+      const { data, error: dbError } = await db.clients.update(selectedClient.id, formData);
+      
+      if (dbError) {
+        throw new Error(dbError.message || 'Erro ao atualizar cliente');
       }
+      
+      setSuccess('Cliente atualizado com sucesso!');
+      setActiveView('list');
+      loadClients();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -175,18 +168,17 @@ const ClientManager = () => {
 
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/clients/${clientId}`, {
-        method: 'DELETE'
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setSuccess('Cliente removido com sucesso!');
-        loadClients();
-      } else {
-        throw new Error(result.detail || 'Erro ao remover cliente');
+      setError(null);
+      
+      // Para deletar, vamos marcar como inativo em vez de deletar fisicamente
+      const { data, error: dbError } = await db.clients.update(clientId, { is_active: false });
+      
+      if (dbError) {
+        throw new Error(dbError.message || 'Erro ao remover cliente');
       }
+      
+      setSuccess('Cliente removido com sucesso!');
+      loadClients();
     } catch (err) {
       setError(err.message);
     } finally {
