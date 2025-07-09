@@ -22,27 +22,58 @@ const BudgetViewer = ({ customLink }) => {
       setError(null);
       
       console.log('BudgetViewer: Buscando orçamento com link:', customLink);
+      console.log('BudgetViewer: URL atual:', window.location.href);
+      
+      // Tentar primeiro via Supabase direto
       const { data, error } = await db.budgets.getByCustomLink(customLink);
       
-      console.log('BudgetViewer: Resultado da busca:', { data, error });
+      console.log('BudgetViewer: Resultado da busca via Supabase:', { data, error });
       
-      if (error) {
-        if (error.code === 'PGRST116') {
-          setError('Link não encontrado. Verifique se o endereço está correto.');
-        } else {
-          setError('Erro ao carregar orçamento: ' + error.message);
-        }
+      if (!error && data) {
+        console.log('BudgetViewer: Orçamento carregado com sucesso via Supabase:', data);
+        setBudget(data);
         return;
       }
+      
+      // Se falhou, tentar via backend como fallback
+      console.log('BudgetViewer: Tentando via backend...');
+      try {
+        const response = await fetch(`/api/budgets/link/${customLink}`);
+        
+        if (response.status === 404) {
+          setError('Link não encontrado. Verifique se o endereço está correto.');
+          return;
+        }
 
-      if (data) {
-        setBudget(data);
-      } else {
-        setError('Orçamento não encontrado');
+        const backendData = await response.json();
+        
+        if (backendData.success) {
+          console.log('BudgetViewer: Orçamento carregado via backend:', backendData.budget);
+          setBudget(backendData.budget);
+        } else {
+          setError('Erro ao carregar orçamento via backend');
+        }
+      } catch (backendErr) {
+        console.error('BudgetViewer: Erro no backend:', backendErr);
+        
+        // Último recurso - mostrar erro original do Supabase
+        if (error) {
+          if (error.code === 'PGRST116') {
+            setError('Link não encontrado. Verifique se o endereço está correto.');
+          } else if (error.code === '42501') {
+            setError('Erro de permissão. Execute o script fix_rls_policies.sql no Supabase.');
+          } else if (error.message?.includes('Invalid API key')) {
+            setError('Erro de configuração do Supabase. Verifique as credenciais.');
+          } else {
+            setError('Erro ao carregar orçamento: ' + (error.message || JSON.stringify(error)));
+          }
+        } else {
+          setError('Erro de conexão. Tente novamente mais tarde.');
+        }
       }
     } catch (err) {
-      console.error('BudgetViewer: Erro ao carregar orçamento:', err);
-      setError('Erro de conexão. Tente novamente mais tarde.');
+      console.error('BudgetViewer: Erro geral:', err);
+      setError('Erro de conexão. Tente novamente mais tarde: ' + err.message);
     } finally {
       setIsLoading(false);
     }

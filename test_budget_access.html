@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste de Acesso ao Orçamento</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Teste de Acesso ao Orçamento</h1>
+    <p>Testando acesso ao orçamento: <strong>orcamento-1752096006845</strong></p>
+    
+    <div id="result"></div>
+    
+    <script>
+        // Configuração do Supabase
+        const supabaseUrl = 'https://lywwxzfnhzbdkxnblvcf.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5d3d4emZuaHpiZGt4bmJsdmNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjYxNTcsImV4cCI6MjA2NDcwMjE1N30.c91JJQ9yFPdjvMcH3VqrJWKu6dUSocrx0Ri9E1V8eDQ';
+        
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        async function testBudgetAccess() {
+            const customLink = 'orcamento-1752096006845';
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                // Teste 1: Listar todos os orçamentos
+                console.log('Teste 1: Listando todos os orçamentos...');
+                const { data: allBudgets, error: allError } = await supabase
+                    .from('budgets')
+                    .select('id, custom_link, created_at')
+                    .limit(10);
+                
+                if (allError) {
+                    console.error('Erro ao listar orçamentos:', allError);
+                    resultDiv.innerHTML += '<p><strong>Erro ao listar orçamentos:</strong> ' + allError.message + '</p>';
+                } else {
+                    console.log('Orçamentos encontrados:', allBudgets);
+                    resultDiv.innerHTML += '<p><strong>Orçamentos encontrados:</strong> ' + allBudgets.length + '</p>';
+                    resultDiv.innerHTML += '<pre>' + JSON.stringify(allBudgets, null, 2) + '</pre>';
+                }
+                
+                // Teste 2: Buscar orçamento específico
+                console.log('Teste 2: Buscando orçamento específico...');
+                const { data: specificBudget, error: specificError } = await supabase
+                    .from('budgets')
+                    .select('*')
+                    .eq('custom_link', customLink)
+                    .single();
+                
+                if (specificError) {
+                    console.error('Erro ao buscar orçamento específico:', specificError);
+                    resultDiv.innerHTML += '<p><strong>Erro ao buscar orçamento específico:</strong> ' + specificError.message + '</p>';
+                } else {
+                    console.log('Orçamento específico encontrado:', specificBudget);
+                    resultDiv.innerHTML += '<p><strong>Orçamento específico encontrado!</strong></p>';
+                    resultDiv.innerHTML += '<pre>' + JSON.stringify(specificBudget, null, 2) + '</pre>';
+                }
+                
+            } catch (error) {
+                console.error('Erro geral:', error);
+                resultDiv.innerHTML += '<p><strong>Erro geral:</strong> ' + error.message + '</p>';
+            }
+        }
+        
+        // Executar teste quando a página carregar
+        window.onload = testBudgetAccess;
+    </script>
+</body>
+</html>

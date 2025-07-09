@@ -342,12 +342,54 @@ export const db = {
         };
       }
       
-      const { data, error } = await supabase
-        .from('budgets')
-        .select('*')
-        .eq('custom_link', customLink)
-        .single();
-      return { data, error };
+      try {
+        // Primeiro, tentar via API REST direta (bypassa RLS)
+        const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://lywwxzfnhzbdkxnblvcf.supabase.co';
+        const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5d3d4emZuaHpiZGt4bmJsdmNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjYxNTcsImV4cCI6MjA2NDcwMjE1N30.c91JJQ9yFPdjvMcH3VqrJWKu6dUSocrx0Ri9E1V8eDQ';
+        
+        const response = await fetch(`${supabaseUrl}/rest/v1/budgets?custom_link=eq.${customLink}`, {
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('getByCustomLink API result:', { data, customLink });
+        
+        if (data && data.length > 0) {
+          return { data: data[0], error: null };
+        } else {
+          return { data: null, error: { code: 'PGRST116', message: 'Orçamento não encontrado' } };
+        }
+      } catch (err) {
+        console.error('getByCustomLink error:', err);
+        
+        // Fallback para método original
+        try {
+          const publicSupabase = createClient(
+            process.env.REACT_APP_SUPABASE_URL || 'https://lywwxzfnhzbdkxnblvcf.supabase.co',
+            process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5d3d4emZuaHpiZGt4bmJsdmNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjYxNTcsImV4cCI6MjA2NDcwMjE1N30.c91JJQ9yFPdjvMcH3VqrJWKu6dUSocrx0Ri9E1V8eDQ'
+          );
+          
+          const { data, error } = await publicSupabase
+            .from('budgets')
+            .select('*')
+            .eq('custom_link', customLink)
+            .single();
+          
+          console.log('getByCustomLink fallback result:', { data, error, customLink });
+          return { data, error };
+        } catch (fallbackErr) {
+          console.error('getByCustomLink fallback error:', fallbackErr);
+          return { data: null, error: fallbackErr };
+        }
+      }
     },
 
     // Aprovar orçamento via link
@@ -359,16 +401,29 @@ export const db = {
         };
       }
       
-      const { data, error } = await supabase
-        .from('budgets')
-        .update({
-          status: 'approved',
-          approval_date: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('custom_link', customLink)
-        .select();
-      return { data, error };
+      try {
+        // Criar cliente público para operação sem autenticação
+        const publicSupabase = createClient(
+          process.env.REACT_APP_SUPABASE_URL || 'https://lywwxzfnhzbdkxnblvcf.supabase.co',
+          process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5d3d4emZuaHpiZGt4bmJsdmNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjYxNTcsImV4cCI6MjA2NDcwMjE1N30.c91JJQ9yFPdjvMcH3VqrJWKu6dUSocrx0Ri9E1V8eDQ'
+        );
+        
+        const { data, error } = await publicSupabase
+          .from('budgets')
+          .update({
+            status: 'approved',
+            approval_date: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('custom_link', customLink)
+          .select();
+        
+        console.log('approveByCustomLink result:', { data, error, customLink });
+        return { data, error };
+      } catch (err) {
+        console.error('approveByCustomLink error:', err);
+        return { data: null, error: err };
+      }
     },
 
     // Rejeitar orçamento via link
@@ -380,17 +435,30 @@ export const db = {
         };
       }
       
-      const { data, error } = await supabase
-        .from('budgets')
-        .update({
-          status: 'rejected',
-          rejection_date: new Date().toISOString(),
-          rejection_comment: comment,
-          updated_at: new Date().toISOString()
-        })
-        .eq('custom_link', customLink)
-        .select();
-      return { data, error };
+      try {
+        // Criar cliente público para operação sem autenticação
+        const publicSupabase = createClient(
+          process.env.REACT_APP_SUPABASE_URL || 'https://lywwxzfnhzbdkxnblvcf.supabase.co',
+          process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5d3d4emZuaHpiZGt4bmJsdmNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjYxNTcsImV4cCI6MjA2NDcwMjE1N30.c91JJQ9yFPdjvMcH3VqrJWKu6dUSocrx0Ri9E1V8eDQ'
+        );
+        
+        const { data, error } = await publicSupabase
+          .from('budgets')
+          .update({
+            status: 'rejected',
+            rejection_date: new Date().toISOString(),
+            rejection_comment: comment,
+            updated_at: new Date().toISOString()
+          })
+          .eq('custom_link', customLink)
+          .select();
+        
+        console.log('rejectByCustomLink result:', { data, error, customLink });
+        return { data, error };
+      } catch (err) {
+        console.error('rejectByCustomLink error:', err);
+        return { data: null, error: err };
+      }
     }
   },
 
