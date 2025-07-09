@@ -283,12 +283,14 @@ const BudgetHub = () => {
   };
 
   const handleCreateBudget = async () => {
+    console.log('BudgetHub: handleCreateBudget CHAMADA!');
     setIsLoading(true);
     setError(null);
     setSuccess(null);
 
     // Validação adicional
     if (!isFormValid()) {
+      console.log('BudgetHub: Formulário inválido, parando aqui');
       setError('Por favor, preencha todos os campos obrigatórios');
       setIsLoading(false);
       return;
@@ -560,12 +562,28 @@ const BudgetHub = () => {
       formData.client_id : 
       (formData.client_name && formData.client_email);
       
-    return hasClientData &&
+    const isValid = hasClientData &&
            formData.property_name && 
            formData.state && 
            formData.city && 
            formData.vertices_count && 
            formData.property_area;
+    
+    console.log('BudgetHub: Validação do formulário:', {
+      useExistingClient,
+      hasClientData,
+      client_id: formData.client_id,
+      client_name: formData.client_name,
+      client_email: formData.client_email,
+      property_name: formData.property_name,
+      state: formData.state,
+      city: formData.city,
+      vertices_count: formData.vertices_count,
+      property_area: formData.property_area,
+      isValid
+    });
+    
+    return isValid;
   };
 
   const isNewClientFormValid = () => {
