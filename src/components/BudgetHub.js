@@ -295,7 +295,11 @@ const BudgetHub = () => {
     }
 
     try {
+      console.log('BudgetHub: Iniciando criação de orçamento...');
+      console.log('BudgetHub: Dados do formulário:', formData);
+      
       // Primeiro calcula o orçamento
+      console.log('BudgetHub: Calculando orçamento...');
       const calculateResponse = await fetch('/api/calculate-budget', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -306,14 +310,19 @@ const BudgetHub = () => {
         })
       });
 
+      console.log('BudgetHub: Resposta do cálculo:', calculateResponse);
+
       if (!calculateResponse.ok) {
         const errorData = await calculateResponse.json();
+        console.error('BudgetHub: Erro no cálculo:', errorData);
         throw new Error(errorData.detail || `Erro HTTP: ${calculateResponse.status}`);
       }
 
       const budgetResult = await calculateResponse.json();
+      console.log('BudgetHub: Resultado do cálculo:', budgetResult);
 
       if (!budgetResult.success) {
+        console.error('BudgetHub: Cálculo falhou:', budgetResult);
         throw new Error(budgetResult.message || 'Erro ao calcular orçamento');
       }
 
