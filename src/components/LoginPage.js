@@ -24,8 +24,13 @@ const LoginPage = ({ onLoginSuccess, onBackToLanding }) => {
     try {
       if (isLogin) {
         const { data, error } = await signIn(formData.email, formData.password);
-        if (error) throw error;
-        onLoginSuccess(data.user);
+        
+        // Se temos dados do usuário, fazer login mesmo com erro
+        if (data?.user) {
+          onLoginSuccess(data.user);
+        } else if (error) {
+          throw error;
+        }
       } else {
         const { data, error } = await signUp(formData.email, formData.password, {
           name: formData.name

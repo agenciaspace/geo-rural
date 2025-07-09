@@ -4,6 +4,7 @@ import SimpleLandingPage from './components/SimpleLandingPage';
 import LoginPage from './components/LoginPage';
 import BudgetViewer from './components/BudgetViewer';
 import DashboardLayout from './components/DashboardLayout';
+import OnboardingFlow from './components/OnboardingFlow';
 import { AuthProvider } from './hooks/useAuth';
 import './styles/dashboard.css';
 
@@ -17,16 +18,36 @@ const PublicBudgetViewer = () => {
 const MainApp = () => {
   const [currentView, setCurrentView] = useState('landing');
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const handleAccessApp = () => {
     setCurrentView('login');
   };
 
   const handleLoginSuccess = (userData) => {
+    setCurrentUser(userData);
+    
+    // Verificar se o usuário precisa completar o onboarding
+    const userMetadata = userData?.user_metadata || {};
+    const needsOnboarding = !userMetadata.phone || !userMetadata.company || !userMetadata.position || !userMetadata.city || !userMetadata.state;
+    
+    if (needsOnboarding) {
+      setShowOnboarding(true);
+      setCurrentView('onboarding');
+    } else {
+      setCurrentView('app');
+    }
+  };
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
     setCurrentView('app');
   };
 
   const handleLogout = () => {
+    setCurrentUser(null);
+    setShowOnboarding(false);
     setCurrentView('landing');
   };
 
@@ -46,6 +67,12 @@ const MainApp = () => {
         <LoginPage 
           onLoginSuccess={handleLoginSuccess}
           onBackToLanding={handleBackToLanding}
+        />
+      )}
+
+      {currentView === 'onboarding' && (
+        <OnboardingFlow 
+          onComplete={handleOnboardingComplete}
         />
       )}
 

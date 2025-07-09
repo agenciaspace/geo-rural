@@ -67,7 +67,30 @@ const BudgetHub = () => {
     if (activeView === 'list') {
       loadBudgets();
     }
-    if (activeView === 'create' || activeView === 'edit') {
+    if (activeView === 'create') {
+      loadClients();
+      // Reset form when switching to create view
+      setFormData({
+        client_id: '',
+        client_name: '',
+        client_email: '',
+        client_phone: '',
+        property_name: '',
+        state: '',
+        city: '',
+        vertices_count: 4,
+        property_area: 1.0,
+        client_type: 'pessoa_fisica',
+        is_urgent: false,
+        includes_topography: false,
+        includes_environmental: false,
+        additional_notes: ''
+      });
+      setSelectedClient(null);
+      setUseExistingClient(false);
+      setShowClientForm(false);
+    }
+    if (activeView === 'edit') {
       loadClients();
     }
   }, [activeView]);
@@ -93,15 +116,19 @@ const BudgetHub = () => {
 
   const loadClients = async () => {
     try {
+      console.log('Carregando clientes...');
       const { data, error: dbError } = await db.clients.list();
       
       if (dbError) {
         console.error('Erro ao carregar clientes:', dbError);
+        setError('Erro ao carregar clientes: ' + dbError.message);
       } else {
+        console.log('Clientes carregados:', data);
         setClients(data || []);
       }
     } catch (err) {
       console.error('Erro ao carregar clientes:', err);
+      setError('Erro de conexão ao carregar clientes');
     }
   };
 
@@ -169,22 +196,39 @@ const BudgetHub = () => {
     }
     
     try {
-      const response = await fetch('/api/clients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newClientData)
-      });
+      const { data, error: dbError } = await db.clients.create(newClientData);
       
-      const result = await response.json();
+      if (dbError) {
+        throw new Error(dbError.message || 'Erro ao criar cliente');
+      }
       
-      if (result.success) {
+      if (data && data.length > 0) {
         await loadClients();
-        handleClientSelection(result.client.id);
+        handleClientSelection(data[0].id);
         setUseExistingClient(true);
         setShowClientForm(false);
         setSuccess('✅ Cliente criado com sucesso!');
+        
+        // Reset new client form
+        setNewClientData({
+          name: '',
+          email: '',
+          phone: '',
+          client_type: 'pessoa_fisica',
+          document: '',
+          company_name: '',
+          address: {
+            street: '',
+            number: '',
+            city: '',
+            state: '',
+            zip_code: '',
+            country: 'Brasil'
+          },
+          notes: ''
+        });
       } else {
-        throw new Error(result.detail || 'Erro ao criar cliente');
+        throw new Error('Erro ao criar cliente - dados não retornados');
       }
     } catch (err) {
       setError(err.message);

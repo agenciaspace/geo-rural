@@ -6,7 +6,6 @@ import BudgetHub from './BudgetHub';
 import ClientManager from './ClientManager';
 import GnssUploader from './GnssUploader';
 import UserProfile from './UserProfile';
-import EmailConfirmationModal from './EmailConfirmationModal';
 
 const DashboardLayout = ({ onLogout }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -202,9 +201,6 @@ const DashboardLayout = ({ onLogout }) => {
           </Routes>
         </div>
       </div>
-      
-      {/* Modal de confirmação de email */}
-      <EmailConfirmationModal />
     </div>
   );
 };

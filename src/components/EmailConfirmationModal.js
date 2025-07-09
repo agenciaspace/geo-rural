@@ -9,8 +9,8 @@ const EmailConfirmationModal = () => {
 
   useEffect(() => {
     // Verificar se o usuário existe e se o email não foi confirmado
-    // Apenas funciona com Supabase real, não em modo demo
-    if (user && user.email_confirmed_at === null && !isDismissed) {
+    // Funciona tanto com Supabase real quanto modo demo
+    if (user && !user.email_confirmed_at && !isDismissed) {
       setIsVisible(true);
     } else {
       setIsVisible(false);
@@ -221,7 +221,7 @@ const EmailConfirmationModal = () => {
         <h3 className="modal-title">
           <span className="modal-icon">📧</span>
           Confirme seu e-mail
-          <span className="warning-badge">Pendente</span>
+          <span className="warning-badge">Não confirmado</span>
         </h3>
         <button className="close-button" onClick={handleDismiss}>
           ×
@@ -230,10 +230,10 @@ const EmailConfirmationModal = () => {
 
       <div className="modal-body">
         <p className="modal-message">
-          Enviamos um email de confirmação para{' '}
+          Para continuar usando a aplicação, confirme seu email{' '}
           <span className="user-email">{user?.email}</span>. 
-          Por favor, verifique sua caixa de entrada e clique no link de confirmação 
-          para ativar completamente sua conta.
+          Verifique sua caixa de entrada e clique no link de confirmação 
+          que foi enviado para ativar completamente sua conta.
         </p>
 
         <div className="modal-actions">

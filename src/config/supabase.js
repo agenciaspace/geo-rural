@@ -7,12 +7,19 @@ const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJI
 // Cria cliente do Supabase apenas se as variáveis estiverem configuradas
 export const supabase = supabaseUrl && supabaseAnonKey 
   ? createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
-  }
-    })
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+      // Configurações para permitir login sem confirmação de email
+      flowType: 'pkce'
+    },
+    global: {
+      headers: {
+        'X-Client-Info': 'supabase-js-web'
+      }
+    }
+  })
   : null;
 
 // Verificar se Supabase está configurado
@@ -23,26 +30,9 @@ export const auth = {
   // Login com email e senha
   signIn: async (email, password) => {
     if (!supabase) {
-      // Modo demo/desenvolvimento - simular login
-      const mockUser = {
-        id: 'demo-user',
-        email: email,
-        user_metadata: { 
-          name: 'Usuário Demo',
-          phone: '',
-          company: '',
-          position: '',
-          city: '',
-          state: ''
-        }
-      };
-      
-      // Persistir no localStorage para manter os dados entre recargas
-      localStorage.setItem('demo-user', JSON.stringify(mockUser));
-      
       return { 
-        data: { user: mockUser, session: { user: mockUser } }, 
-        error: null 
+        data: null, 
+        error: { message: 'Supabase não configurado' } 
       };
     }
     
@@ -50,32 +40,31 @@ export const auth = {
       email,
       password
     });
+    
+    // Traduzir erros comuns para português
+    if (error) {
+      let translatedError = { ...error };
+      if (error.message?.includes('Email not confirmed')) {
+        translatedError.message = 'Email não confirmado. Você pode usar a aplicação, mas é recomendado confirmar seu email.';
+      } else if (error.message?.includes('Invalid login credentials')) {
+        translatedError.message = 'Credenciais inválidas. Verifique seu email e senha.';
+      } else if (error.message?.includes('User not found')) {
+        translatedError.message = 'Usuário não encontrado. Verifique seu email.';
+      } else if (error.message?.includes('Too many requests')) {
+        translatedError.message = 'Muitas tentativas. Tente novamente em alguns minutos.';
+      }
+      return { data, error: translatedError };
+    }
+    
     return { data, error };
   },
 
   // Cadastro de novo usuário
   signUp: async (email, password, metadata = {}) => {
     if (!supabase) {
-      // Modo demo/desenvolvimento - simular cadastro
-      const mockUser = {
-        id: 'demo-user',
-        email: email,
-        user_metadata: { 
-          name: metadata.name || 'Usuário Demo',
-          phone: metadata.phone || '',
-          company: metadata.company || '',
-          position: metadata.position || '',
-          city: metadata.city || '',
-          state: metadata.state || ''
-        }
-      };
-      
-      // Persistir no localStorage para manter os dados entre recargas
-      localStorage.setItem('demo-user', JSON.stringify(mockUser));
-      
       return { 
-        data: { user: mockUser, session: { user: mockUser } }, 
-        error: null 
+        data: null, 
+        error: { message: 'Supabase não configurado' } 
       };
     }
     
@@ -92,9 +81,7 @@ export const auth = {
   // Logout
   signOut: async () => {
     if (!supabase) {
-      // Limpar dados do localStorage no modo demo
-      localStorage.removeItem('demo-user');
-      return { error: null };
+      return { error: { message: 'Supabase não configurado' } };
     }
     
     const { error } = await supabase.auth.signOut();
@@ -104,23 +91,9 @@ export const auth = {
   // Obter usuário atual
   getUser: () => {
     if (!supabase) {
-      // Verificar se há um usuário demo no localStorage
-      const storedUser = localStorage.getItem('demo-user');
-      if (storedUser) {
-        try {
-          const user = JSON.parse(storedUser);
-          return Promise.resolve({ 
-            data: { user }, 
-            error: null 
-          });
-        } catch (e) {
-          console.error('Erro ao parsear usuário demo:', e);
-        }
-      }
-      
       return Promise.resolve({ 
         data: { user: null }, 
-        error: null 
+        error: { message: 'Supabase não configurado' } 
       });
     }
     
@@ -207,6 +180,20 @@ export const auth = {
       type: 'signup',
       email: email
     });
+    
+    // Traduzir erros comuns para português
+    if (error) {
+      let translatedError = { ...error };
+      if (error.message?.includes('Email not confirmed')) {
+        translatedError.message = 'Email não confirmado';
+      } else if (error.message?.includes('Invalid email')) {
+        translatedError.message = 'Email inválido';
+      } else if (error.message?.includes('Too many requests')) {
+        translatedError.message = 'Muitas tentativas. Tente novamente em alguns minutos.';
+      }
+      return { data, error: translatedError };
+    }
+    
     return { data, error };
   }
 };
