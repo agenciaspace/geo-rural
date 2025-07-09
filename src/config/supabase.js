@@ -115,39 +115,72 @@ export const auth = {
   // Atualizar perfil do usuário
   updateProfile: async (profileData) => {
     if (!supabase) {
-      // Modo demo - atualizar dados no localStorage
-      const storedUser = localStorage.getItem('demo-user');
-      if (storedUser) {
-        try {
-          const user = JSON.parse(storedUser);
-          const updatedUser = {
-            ...user,
-            user_metadata: {
-              ...user.user_metadata,
-              ...profileData
-            }
-          };
-          localStorage.setItem('demo-user', JSON.stringify(updatedUser));
-          console.log('Modo demo: Perfil atualizado:', profileData);
-          return { data: { user: updatedUser }, error: null };
-        } catch (e) {
-          console.error('Erro ao atualizar perfil demo:', e);
-        }
-      }
-      return { data: { user: profileData }, error: null };
+      return { 
+        data: null, 
+        error: { message: 'Supabase não configurado' } 
+      };
     }
 
-    const { data, error } = await supabase.auth.updateUser({
-      data: profileData
-    });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { 
+        data: null, 
+        error: { message: 'Usuário não autenticado' } 
+      };
+    }
+
+    // Atualizar tabela user_profiles
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .upsert({
+        id: user.id,
+        full_name: profileData.name,
+        phone: profileData.phone,
+        company_name: profileData.company,
+        position: profileData.position,
+        city: profileData.city,
+        state: profileData.state,
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    return { data, error };
+  },
+
+  // Buscar perfil do usuário
+  getUserProfile: async () => {
+    if (!supabase) {
+      return { 
+        data: null, 
+        error: { message: 'Supabase não configurado' } 
+      };
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { 
+        data: null, 
+        error: { message: 'Usuário não autenticado' } 
+      };
+    }
+
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
     return { data, error };
   },
 
   // Alterar senha
   updatePassword: async (newPassword) => {
     if (!supabase) {
-      console.log('Modo demo: Senha alterada');
-      return { error: null };
+      return { 
+        data: null, 
+        error: { message: 'Supabase não configurado' } 
+      };
     }
 
     const { data, error } = await supabase.auth.updateUser({
@@ -159,8 +192,10 @@ export const auth = {
   // Atualizar email
   updateEmail: async (newEmail) => {
     if (!supabase) {
-      console.log('Modo demo: Email alterado para:', newEmail);
-      return { error: null };
+      return { 
+        data: null, 
+        error: { message: 'Supabase não configurado' } 
+      };
     }
 
     const { data, error } = await supabase.auth.updateUser({
@@ -172,8 +207,10 @@ export const auth = {
   // Reenviar email de confirmação
   resendConfirmation: async (email) => {
     if (!supabase) {
-      console.log('Modo demo: Email de confirmação reenviado para:', email);
-      return { error: null };
+      return { 
+        data: null, 
+        error: { message: 'Supabase não configurado' } 
+      };
     }
 
     const { data, error } = await supabase.auth.resend({
@@ -204,8 +241,10 @@ export const db = {
   leads: {
     create: async (leadData) => {
       if (!supabase) {
-        console.log('Modo demo: Lead capturado:', leadData);
-        return { data: [{ id: 'demo-lead', ...leadData }], error: null };
+        return { 
+          data: null, 
+          error: { message: 'Supabase não configurado' } 
+        };
       }
       
       const { data, error } = await supabase
@@ -217,7 +256,10 @@ export const db = {
     
     list: async () => {
       if (!supabase) {
-        return { data: [], error: null };
+        return { 
+          data: null, 
+          error: { message: 'Supabase não configurado' } 
+        };
       }
       
       const { data, error } = await supabase
@@ -232,8 +274,10 @@ export const db = {
   budgets: {
     create: async (budgetData) => {
       if (!supabase) {
-        console.log('Modo demo: Orçamento criado:', budgetData);
-        return { data: [{ id: 'demo-budget', ...budgetData }], error: null };
+        return { 
+          data: null, 
+          error: { message: 'Supabase não configurado' } 
+        };
       }
       
       const { data: { user } } = await supabase.auth.getUser();
@@ -249,40 +293,19 @@ export const db = {
 
     list: async () => {
       if (!supabase) {
-        // Retornar dados de exemplo para demonstração
         return { 
-          data: [
-            {
-              id: 'demo-1',
-              client_name: 'João Silva',
-              property_name: 'Fazenda São João',
-              total: 2500.00,
-              status: 'active', 
-              created_at: new Date().toISOString(),
-              budget_request: {
-                client_name: 'João Silva',
-                property_name: 'Fazenda São João',
-                city: 'São Paulo',
-                state: 'SP',
-                vertices_count: 4,
-                property_area: 10.5,
-                client_type: 'pessoa_fisica'
-              },
-              budget_result: {
-                total_price: 2500.00,
-                success: true
-              }
-            }
-          ], 
-          error: null 
+          data: null, 
+          error: { message: 'Supabase não configurado' } 
         };
       }
       
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        // Retornar lista vazia em vez de erro para permitir uso da aplicação
-        return { data: [], error: null };
+        return { 
+          data: null, 
+          error: { message: 'Usuário não autenticado' } 
+        };
       }
 
       const { data, error } = await supabase
@@ -296,7 +319,10 @@ export const db = {
 
     getById: async (id) => {
       if (!supabase) {
-        return { data: null, error: null };
+        return { 
+          data: null, 
+          error: { message: 'Supabase não configurado' } 
+        };
       }
       
       const { data, error } = await supabase
@@ -312,8 +338,10 @@ export const db = {
   clients: {
     create: async (clientData) => {
       if (!supabase) {
-        console.log('Modo demo: Cliente criado:', clientData);
-        return { data: [{ id: 'demo-client', ...clientData }], error: null };
+        return { 
+          data: null, 
+          error: { message: 'Supabase não configurado' } 
+        };
       }
       
       const { data: { user } } = await supabase.auth.getUser();
@@ -329,13 +357,18 @@ export const db = {
 
     list: async () => {
       if (!supabase) {
-        return { data: [], error: null };
+        return { 
+          data: null, 
+          error: { message: 'Supabase não configurado' } 
+        };
       }
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        // Retornar lista vazia em vez de erro para permitir uso da aplicação
-        return { data: [], error: null };
+        return { 
+          data: null, 
+          error: { message: 'Usuário não autenticado' } 
+        };
       }
 
       const { data, error } = await supabase
@@ -349,7 +382,10 @@ export const db = {
 
     getById: async (id) => {
       if (!supabase) {
-        return { data: null, error: null };
+        return { 
+          data: null, 
+          error: { message: 'Supabase não configurado' } 
+        };
       }
       
       const { data, error } = await supabase
@@ -362,8 +398,10 @@ export const db = {
 
     update: async (id, clientData) => {
       if (!supabase) {
-        console.log('Modo demo: Cliente atualizado:', id, clientData);
-        return { data: [{ id, ...clientData }], error: null };
+        return { 
+          data: null, 
+          error: { message: 'Supabase não configurado' } 
+        };
       }
       
       const { data, error } = await supabase
@@ -382,8 +420,10 @@ export const db = {
   gnssAnalyses: {
     create: async (analysisData) => {
       if (!supabase) {
-        console.log('Modo demo: Análise GNSS criada:', analysisData);
-        return { data: [{ id: 'demo-analysis', ...analysisData }], error: null };
+        return { 
+          data: null, 
+          error: { message: 'Supabase não configurado' } 
+        };
       }
       
       const { data: { user } } = await supabase.auth.getUser();
@@ -399,26 +439,24 @@ export const db = {
 
     list: async () => {
       if (!supabase) {
-        // Retornar dados de exemplo para demonstração
         return { 
-          data: [
-            {
-              id: 'demo-gnss-1',
-              filename: 'DEMO_001.obs',
-              analysis_result: { quality: 'boa', coordinates: { lat: -23.5505, lng: -46.6333 } },
-              quality_color: 'green',
-              created_at: new Date().toISOString()
-            }
-          ], 
-          error: null 
+          data: null, 
+          error: { message: 'Supabase não configurado' } 
         };
       }
       
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { 
+          data: null, 
+          error: { message: 'Usuário não autenticado' } 
+        };
+      }
+      
       const { data, error } = await supabase
         .from('gnss_analyses')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       return { data, error };
     }
@@ -430,18 +468,19 @@ export const storage = {
   // Upload de arquivo GNSS
   uploadGnssFile: async (file) => {
     if (!supabase) {
-      console.log('Modo demo: Arquivo GNSS simulado:', file.name);
       return { 
-        data: { 
-          path: `demo/${file.name}`, 
-          publicUrl: '#' 
-        }, 
-        error: null 
+        data: null, 
+        error: { message: 'Supabase não configurado' } 
       };
     }
     
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Usuário não autenticado');
+    if (!user) {
+      return { 
+        data: null, 
+        error: { message: 'Usuário não autenticado' } 
+      };
+    }
 
     const fileName = `${user.id}/${Date.now()}_${file.name}`;
     
@@ -462,7 +501,10 @@ export const storage = {
   // Download de arquivo
   downloadFile: async (path) => {
     if (!supabase) {
-      return { data: null, error: { message: 'Funcionalidade não disponível no modo demo' } };
+      return { 
+        data: null, 
+        error: { message: 'Supabase não configurado' } 
+      };
     }
     
     const { data, error } = await supabase.storage
@@ -474,11 +516,19 @@ export const storage = {
   // Listar arquivos do usuário
   listUserFiles: async () => {
     if (!supabase) {
-      return { data: [], error: null };
+      return { 
+        data: null, 
+        error: { message: 'Supabase não configurado' } 
+      };
     }
     
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: [], error: null };
+    if (!user) {
+      return { 
+        data: null, 
+        error: { message: 'Usuário não autenticado' } 
+      };
+    }
 
     const { data, error } = await supabase.storage
       .from('gnss-files')

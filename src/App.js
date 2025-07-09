@@ -25,12 +25,15 @@ const MainApp = () => {
     setCurrentView('login');
   };
 
-  const handleLoginSuccess = (userData) => {
+  const handleLoginSuccess = async (userData) => {
     setCurrentUser(userData);
     
+    // Buscar dados do perfil do usuário
+    const { auth } = await import('./config/supabase');
+    const { data: profile } = await auth.getUserProfile();
+    
     // Verificar se o usuário precisa completar o onboarding
-    const userMetadata = userData?.user_metadata || {};
-    const needsOnboarding = !userMetadata.phone || !userMetadata.company || !userMetadata.position || !userMetadata.city || !userMetadata.state;
+    const needsOnboarding = !profile || !profile.phone || !profile.company_name || !profile.position || !profile.city || !profile.state;
     
     if (needsOnboarding) {
       setShowOnboarding(true);

@@ -1,161 +1,175 @@
-# 🚀 Configuração do Supabase
-
-Este guia explica como configurar o Supabase para persistência de dados do GeoRural Pro.
+# 🔧 Configuração do Supabase para OnGeo
 
 ## 📋 Pré-requisitos
 
 1. Conta no [Supabase](https://supabase.com)
 2. Projeto criado no Supabase
-3. Acesso ao SQL Editor do Supabase
+3. Credenciais do projeto (URL e Anon Key)
 
-## 🛠️ Configuração Passo a Passo
+## 🗄️ Configuração do Banco de Dados
 
-### 1. **Executar Script de Configuração**
+### 1. Executar o Schema Principal
 
-**⚡ SOLUÇÃO RECOMENDADA:** Execute um dos scripts completos:
+1. Abra o **SQL Editor** no painel do Supabase
+2. Copie e cole o conteúdo do arquivo `supabase_schema.sql`
+3. Execute o script
 
-#### **Opção A - Script Completo (Recomendado):**
-```sql
--- Execute o arquivo: supabase/complete_setup.sql
--- Script mais completo com numeração sequencial de links
-```
+Este script criará:
+- ✅ Tabela `leads` (captura de leads)
+- ✅ Tabela `clients` (gerenciamento de clientes)
+- ✅ Tabela `budgets` (orçamentos)
+- ✅ Tabela `gnss_analyses` (análises GNSS)
+- ✅ Políticas RLS (Row Level Security)
+- ✅ Triggers automáticos
+- ✅ Índices para performance
 
-#### **Opção B - Script Simples (Se Opção A der erro):**
-```sql
--- Execute o arquivo: supabase/simple_setup.sql  
--- Script mais básico, sem stored procedures complexas
-```
+### 2. Configurar Storage para Arquivos GNSS
 
-#### **Scripts Alternativos (Método Antigo):**
+1. Vá para **Storage** no painel do Supabase
+2. Clique em **"New bucket"**
+3. Configure:
+   - **Nome**: `gnss-files`
+   - **Public**: `false` (privado)
+4. Clique em **"Create bucket"**
 
-**Para instalação nova:**
-```sql
--- Execute: supabase/schema_safe.sql
-```
+### 3. Configurar Políticas do Storage
 
-**Para instalação existente com problemas:**
-```sql
--- 1. Execute: supabase/fix_indexes.sql
--- 2. Execute: supabase/migrate_budgets.sql  
-```
+1. Abra o **SQL Editor** novamente
+2. Copie e cole o conteúdo do arquivo `supabase_storage_setup.sql`
+3. Execute o script
 
-### 2. **Configurar Variáveis de Ambiente**
+## 🔑 Configuração da Autenticação
 
-#### **Para Desenvolvimento Local:**
-Copie `.env.example` para `.env.local`:
-```bash
-cp .env.example .env.local
-```
+### 1. Configurar Provedores de Auth
 
-Edite `.env.local` com suas credenciais:
-```bash
-# Supabase Configuration
-SUPABASE_URL=https://SEU-PROJETO.supabase.co
-SUPABASE_ANON_KEY=SUA-CHAVE-ANONIMA
+1. Vá para **Authentication** > **Providers**
+2. Configure **Email**:
+   - ✅ Enable email confirmations
+   - ✅ Enable email change confirmations
+   - ✅ Enable secure email change
 
-# Frontend
-REACT_APP_SUPABASE_URL=https://SEU-PROJETO.supabase.co
-REACT_APP_SUPABASE_ANON_KEY=SUA-CHAVE-ANONIMA
-```
+### 2. Configurar URLs de Callback
 
-#### **Para Railway (Deploy):**
-Configure no Railway Dashboard:
-```bash
-SUPABASE_URL=https://SEU-PROJETO.supabase.co
-SUPABASE_ANON_KEY=SUA-CHAVE-ANONIMA
-REACT_APP_SUPABASE_URL=https://SEU-PROJETO.supabase.co
-REACT_APP_SUPABASE_ANON_KEY=SUA-CHAVE-ANONIMA
-```
+1. Vá para **Authentication** > **URL Configuration**
+2. Configure:
+   - **Site URL**: `http://localhost:3000` (desenvolvimento)
+   - **Redirect URLs**: 
+     - `http://localhost:3000`
+     - `http://localhost:8000`
+     - `https://seudominio.com` (produção)
 
-### 3. **Obter Credenciais do Supabase**
+## 📊 Verificação da Configuração
 
-1. Vá para o dashboard do seu projeto Supabase
-2. Navegue até **Settings** → **API**
-3. Copie:
-   - **Project URL** (SUPABASE_URL)
-   - **anon/public key** (SUPABASE_ANON_KEY)
+### 1. Verificar Tabelas
 
-### 4. **Verificar Configuração**
-
-#### **Teste Local:**
-```bash
-# Instalar dependências
-npm install
-pip install -r requirements.txt
-
-# Iniciar backend
-cd backend && python main.py
-
-# Iniciar frontend  
-npm start
-```
-
-#### **Teste no Supabase:**
 Execute no SQL Editor:
+
 ```sql
--- Verificar se tabelas foram criadas
+-- Verificar se todas as tabelas foram criadas
 SELECT table_name 
 FROM information_schema.tables 
 WHERE table_schema = 'public' 
-ORDER BY table_name;
+AND table_name IN ('leads', 'clients', 'budgets', 'gnss_analyses');
 
--- Testar inserção de orçamento
-INSERT INTO budgets (
-  budget_request, 
-  budget_result, 
-  custom_link
-) VALUES (
-  '{"client_name": "Teste"}',
-  '{"total_price": 1000}',
-  'teste-001'
+-- Verificar políticas RLS
+SELECT tablename, policyname, cmd, qual 
+FROM pg_policies 
+WHERE schemaname = 'public';
+```
+
+### 2. Verificar Storage
+
+```sql
+-- Verificar bucket
+SELECT * FROM storage.buckets WHERE name = 'gnss-files';
+
+-- Verificar políticas do storage
+SELECT * FROM storage.policies WHERE bucket_id = 'gnss-files';
+```
+
+### 3. Testar Autenticação
+
+1. Crie um usuário de teste via **Authentication** > **Users**
+2. Teste login na aplicação
+3. Verifique se o onboarding aparece para usuários sem perfil completo
+
+## 🔐 Variáveis de Ambiente
+
+Certifique-se de que as seguintes variáveis estão configuradas:
+
+```bash
+# .env.local
+REACT_APP_SUPABASE_URL=https://sua-url.supabase.co
+REACT_APP_SUPABASE_ANON_KEY=sua-chave-anonima
+```
+
+## 🚀 Estrutura das Tabelas
+
+### `leads`
+- Captura de leads da landing page
+- Campos: name, email, phone, company, message
+
+### `clients`
+- Gerenciamento de clientes
+- Campos: name, email, phone, client_type, document, company_name, address, notes
+- Relação: user_id (FK para auth.users)
+
+### `budgets`
+- Orçamentos com dados flexíveis em JSON
+- Campos: budget_request, budget_result, custom_link, status
+- Relações: user_id (FK para auth.users), client_id (FK para clients)
+
+### `gnss_analyses`
+- Análises de arquivos GNSS
+- Campos: filename, file_path, analysis_result, quality_color, processing_status
+- Relação: user_id (FK para auth.users)
+
+## 🔒 Segurança (RLS)
+
+Todas as tabelas têm Row Level Security configurado:
+
+- **leads**: Inserção pública, visualização apenas para admins
+- **clients**: Usuários só veem seus próprios dados
+- **budgets**: Usuários só veem seus próprios dados + visualização pública via custom_link
+- **gnss_analyses**: Usuários só veem seus próprios dados
+
+## 📝 Dados de Teste (Opcional)
+
+Para testar a aplicação, você pode inserir dados manualmente:
+
+```sql
+-- Exemplo de cliente de teste (substitua user_id por um ID real)
+INSERT INTO public.clients (user_id, name, email, phone, client_type) 
+VALUES (
+    'seu-user-id-aqui',
+    'João Silva',
+    'joao@teste.com',
+    '(11) 99999-9999',
+    'pessoa_fisica'
 );
 ```
 
-## 🔄 Migração de Dados Existentes
+## 🐛 Troubleshooting
 
-Se você já tinha dados em SQLite:
+### Erro: "relation does not exist"
+- Verifique se o script `supabase_schema.sql` foi executado completamente
+- Confirme que as tabelas foram criadas no schema `public`
 
-1. **Backup dos dados SQLite:**
-   ```bash
-   cp data/budgets.db data/budgets_backup.db
-   ```
+### Erro: "RLS policy violation"
+- Verifique se o usuário está autenticado
+- Confirme que as políticas RLS foram criadas corretamente
 
-2. **Sistema híbrido:** O sistema automaticamente detecta se o Supabase está configurado e usa SQLite como fallback.
+### Erro: "Storage bucket not found"
+- Verifique se o bucket `gnss-files` foi criado
+- Execute o script `supabase_storage_setup.sql`
 
-3. **Migração manual:** Os dados precisam ser migrados manualmente do SQLite para Supabase se necessário.
+## 💡 Próximos Passos
 
-## 🐛 Resolução de Problemas
+1. Execute os scripts SQL fornecidos
+2. Teste a aplicação localmente
+3. Verifique se todas as funcionalidades estão funcionando
+4. Configure o domínio em produção nas URLs de callback
 
-### **Erro: "relation already exists"**
-```sql
--- Execute fix_indexes.sql para corrigir conflitos
-```
+---
 
-### **Erro: "duplicate key"**
-```sql
--- Normal durante upserts, o sistema trata automaticamente
-```
-
-### **Sistema usando SQLite em vez de Supabase:**
-- Verifique se as variáveis SUPABASE_URL e SUPABASE_ANON_KEY estão configuradas
-- Verifique os logs para ver qual sistema está sendo usado
-
-### **Dados não persistindo:**
-- Verifique se RLS (Row Level Security) está configurado corretamente
-- Execute o script de migração se necessário
-
-## ✅ Vantagens do Supabase
-
-- ✅ **Persistência Garantida:** Dados salvos em PostgreSQL robusto
-- ✅ **Escalabilidade:** Suporta milhares de usuários simultâneos  
-- ✅ **Backup Automático:** Backups regulares e restore point
-- ✅ **Real-time:** Updates em tempo real entre usuários
-- ✅ **Segurança:** RLS e autenticação integrada
-- ✅ **Dashboard:** Interface visual para gerenciar dados
-
-## 📞 Suporte
-
-Se encontrar problemas:
-1. Verifique os logs do backend (`python main.py`)
-2. Consulte os logs do Supabase Dashboard
-3. Execute os scripts de verificação fornecidos
+✅ **Configuração concluída!** A aplicação OnGeo agora está conectada ao Supabase com todas as tabelas e políticas de segurança configuradas.
