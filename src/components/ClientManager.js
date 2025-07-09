@@ -50,14 +50,20 @@ const ClientManager = () => {
       setIsLoading(true);
       setError(null);
       
+      console.log('ClientManager: Carregando clientes...');
       const { data, error: dbError } = await db.clients.list();
       
+      console.log('ClientManager: Resultado da consulta:', { data, error: dbError });
+      
       if (dbError) {
+        console.error('ClientManager: Erro ao carregar clientes:', dbError);
         setError('Erro ao carregar clientes: ' + dbError.message);
       } else {
+        console.log('ClientManager: Clientes carregados:', data || []);
         setClients(data || []);
       }
     } catch (err) {
+      console.error('ClientManager: Erro de conexão:', err);
       setError('Erro de conexão ao carregar clientes');
     } finally {
       setIsLoading(false);
@@ -224,6 +230,15 @@ const ClientManager = () => {
     client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (client.company_name && client.company_name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  // Debug logs
+  console.log('ClientManager: Estado atual:', {
+    clients,
+    filteredClients,
+    searchTerm,
+    isLoading,
+    activeView
+  });
 
   const isFormValid = () => {
     return formData.name && formData.email;
