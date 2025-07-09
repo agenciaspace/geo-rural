@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { db } from '../config/supabase';
+import { useAuth } from '../hooks/useAuth';
 
 const BudgetHub = () => {
+  const { isAuthenticated } = useAuth();
   const [activeView, setActiveView] = useState('list'); // 'list', 'create', 'edit', 'view', 'resubmit'
   const [budgets, setBudgets] = useState([]);
   const [selectedBudget, setSelectedBudget] = useState(null);
@@ -72,13 +75,14 @@ const BudgetHub = () => {
   const loadBudgets = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/budgets');
-      const data = await response.json();
+      setError(null);
       
-      if (data.success) {
-        setBudgets(data.budgets);
+      const { data, error: dbError } = await db.budgets.list();
+      
+      if (dbError) {
+        setError('Erro ao carregar orçamentos: ' + dbError.message);
       } else {
-        setError('Erro ao carregar orçamentos');
+        setBudgets(data || []);
       }
     } catch (err) {
       setError('Erro de conexão ao carregar orçamentos');
@@ -89,11 +93,12 @@ const BudgetHub = () => {
 
   const loadClients = async () => {
     try {
-      const response = await fetch('/api/clients');
-      const data = await response.json();
+      const { data, error: dbError } = await db.clients.list();
       
-      if (data.success) {
-        setClients(data.clients);
+      if (dbError) {
+        console.error('Erro ao carregar clientes:', dbError);
+      } else {
+        setClients(data || []);
       }
     } catch (err) {
       console.error('Erro ao carregar clientes:', err);

@@ -20,12 +20,19 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
 
   useEffect(() => {
-    // Obter sessão atual
+    // Obter usuário atual
     const getSession = async () => {
-      const { data: { session } } = await auth.getUser();
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+      try {
+        const { data: { user } } = await auth.getUser();
+        setUser(user);
+        setSession(user ? { user } : null);
+      } catch (error) {
+        console.error('Erro ao obter sessão:', error);
+        setUser(null);
+        setSession(null);
+      } finally {
+        setLoading(false);
+      }
     };
 
     getSession();
@@ -33,6 +40,7 @@ export const AuthProvider = ({ children }) => {
     // Escutar mudanças de autenticação
     const { data: { subscription } } = auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -50,6 +58,12 @@ export const AuthProvider = ({ children }) => {
       
       if (error) throw error;
       
+      // Atualizar o estado do usuário se o login foi bem-sucedido
+      if (data?.user) {
+        setUser(data.user);
+        setSession(data.session);
+      }
+      
       return { data, error: null };
     } catch (error) {
       return { data: null, error };
@@ -65,6 +79,12 @@ export const AuthProvider = ({ children }) => {
       const { data, error } = await auth.signUp(email, password, metadata);
       
       if (error) throw error;
+      
+      // Atualizar o estado do usuário se o cadastro foi bem-sucedido
+      if (data?.user) {
+        setUser(data.user);
+        setSession(data.session);
+      }
       
       return { data, error: null };
     } catch (error) {
@@ -92,6 +112,75 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Função de atualização do perfil
+  const updateProfile = async (profileData) => {
+    try {
+      setLoading(true);
+      const { data, error } = await auth.updateProfile(profileData);
+      
+      if (error) throw error;
+      
+      // Refresh user data
+      const { data: { user: updatedUser } } = await auth.getUser();
+      setUser(updatedUser);
+      setSession(updatedUser ? { user: updatedUser } : null);
+      
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Função de atualização da senha
+  const updatePassword = async (newPassword) => {
+    try {
+      setLoading(true);
+      const { data, error } = await auth.updatePassword(newPassword);
+      
+      if (error) throw error;
+      
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Função de atualização do email
+  const updateEmail = async (newEmail) => {
+    try {
+      setLoading(true);
+      const { data, error } = await auth.updateEmail(newEmail);
+      
+      if (error) throw error;
+      
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Função para reenviar email de confirmação
+  const resendConfirmation = async (email) => {
+    try {
+      setLoading(true);
+      const { data, error } = await auth.resendConfirmation(email);
+      
+      if (error) throw error;
+      
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const value = {
     user,
     session,
@@ -99,6 +188,10 @@ export const AuthProvider = ({ children }) => {
     signIn,
     signUp,
     signOut,
+    updateProfile,
+    updatePassword,
+    updateEmail,
+    resendConfirmation,
     isAuthenticated: !!user
   };
 

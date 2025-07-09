@@ -42,7 +42,8 @@
       "Bash(railway:*)",
       "Bash(git fetch:*)",
       "Bash(find:*)",
-      "WebFetch(domain:precizu.up.railway.app)"
+      "WebFetch(domain:precizu.up.railway.app)",
+      "WebFetch(domain:g.co)"
     ],
     "deny": []
   }

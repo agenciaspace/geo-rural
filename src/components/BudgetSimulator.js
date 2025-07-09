@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from '../config/axios';
-import API_ENDPOINTS from '../config/api';
+import { API_ENDPOINTS } from '../config/api';
 import { db } from '../config/supabase';
 
 const BudgetSimulator = () => {

@@ -80,11 +80,11 @@ BASE_DIR = Path(__file__).parent
 BUILD_DIR = BASE_DIR.parent / "build"
 
 # Servir arquivos estáticos do React
-if BUILD_DIR.exists():
+if BUILD_DIR.exists() and (BUILD_DIR / "static").exists():
     app.mount("/static", StaticFiles(directory=BUILD_DIR / "static"), name="static")
     logger.info(f"Static files mounted from: {BUILD_DIR / 'static'}")
 else:
-    logger.warning(f"Build directory not found: {BUILD_DIR}")
+    logger.warning(f"Build directory or static files not found: {BUILD_DIR}")
 
 logger.info(f"Build directory: {BUILD_DIR}")
 

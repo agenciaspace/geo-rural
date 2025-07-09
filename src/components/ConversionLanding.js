@@ -177,7 +177,7 @@ const ConversionLanding = ({ onAccessApp, onBackToEducational }) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-2xl">🌱</span>
-              <span className="text-xl font-bold text-green-600">PRECIZU</span>
+              <span className="text-xl font-bold text-green-600">OnGeo</span>
             </div>
             
             <div className="flex items-center gap-4">
@@ -504,7 +504,7 @@ const ConversionLanding = ({ onAccessApp, onBackToEducational }) => {
           <DialogHeader>
             <DialogTitle>Entrar na sua conta</DialogTitle>
             <DialogDescription>
-              Acesse sua conta para continuar usando o PRECIZU
+              Acesse sua conta para continuar usando o OnGeo
             </DialogDescription>
           </DialogHeader>
           
@@ -545,7 +545,7 @@ const ConversionLanding = ({ onAccessApp, onBackToEducational }) => {
         <div className="container mx-auto px-4 text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
             <span className="text-2xl">🌱</span>
-            <span className="text-xl font-bold">PRECIZU</span>
+            <span className="text-xl font-bold">OnGeo</span>
           </div>
           <p className="text-gray-400 mb-4">
             Transformando o georreferenciamento rural com inteligência artificial

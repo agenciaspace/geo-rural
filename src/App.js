@@ -1,14 +1,11 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation, useParams } from 'react-router-dom';
-import BudgetHub from './components/BudgetHub';
-import ClientManager from './components/ClientManager';
-import GnssUploader from './components/GnssUploader';
-import Dashboard from './components/Dashboard';
-import LandingPage from './components/LandingPage';
-import ConversionLanding from './components/ConversionLanding';
-import Login from './components/Login';
+import { BrowserRouter as Router, Routes, Route, useParams } from 'react-router-dom';
+import SimpleLandingPage from './components/SimpleLandingPage';
+import LoginPage from './components/LoginPage';
 import BudgetViewer from './components/BudgetViewer';
+import DashboardLayout from './components/DashboardLayout';
 import { AuthProvider } from './hooks/useAuth';
+import './styles/dashboard.css';
 
 // Componente para visualização pública de orçamento
 const PublicBudgetViewer = () => {
@@ -18,19 +15,11 @@ const PublicBudgetViewer = () => {
 
 // Componente principal da aplicação interna
 const MainApp = () => {
-  const [currentView, setCurrentView] = useState('educational');
+  const [currentView, setCurrentView] = useState('landing');
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const handleAccessApp = () => {
     setCurrentView('login');
-  };
-
-  const handleGoToConversion = () => {
-    setCurrentView('conversion');
-  };
-
-  const handleBackToEducational = () => {
-    setCurrentView('educational');
   };
 
   const handleLoginSuccess = (userData) => {
@@ -38,115 +27,31 @@ const MainApp = () => {
   };
 
   const handleLogout = () => {
-    setCurrentView('educational');
+    setCurrentView('landing');
   };
 
   const handleBackToLanding = () => {
-    setCurrentView('educational');
+    setCurrentView('landing');
   };
-
-  if (currentView === 'educational') {
-    return (
-      <LandingPage 
-        onAccessApp={handleAccessApp}
-        onConversionLanding={handleGoToConversion}
-      />
-    );
-  }
-
-  if (currentView === 'conversion') {
-    return (
-      <ConversionLanding 
-        onAccessApp={handleAccessApp}
-        onBackToEducational={handleBackToEducational}
-      />
-    );
-  }
-
-  if (currentView === 'login') {
-    return (
-      <Login 
-        onLoginSuccess={handleLoginSuccess}
-        onBackToLanding={handleBackToLanding}
-      />
-    );
-  }
 
   return (
     <AuthProvider>
-      <div className="App">
-        <div className="header">
-          <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <h1>PRECIZU</h1>
-              <p>Plataforma de Georreferenciamento e Análise GNSS</p>
-            </div>
-            <button 
-              onClick={handleLogout}
-              style={{
-                background: 'transparent',
-                border: '2px solid white',
-                color: 'white',
-                padding: '0.5rem 1rem',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '0.9rem'
-              }}
-            >
-              Sair
-            </button>
-          </div>
-        </div>
-        
-        <div className="container">
-          <div style={{
-            background: 'linear-gradient(135deg, #e8f5e8, #f0f8ff)',
-            padding: '1.5rem',
-            borderRadius: '12px',
-            marginBottom: '2rem',
-            textAlign: 'center'
-          }}>
-            <h3 style={{ margin: '0 0 0.5rem 0', color: '#2c5aa0' }}>
-              🎉 Bem-vindo ao Demo do PRECIZU!
-            </h3>
-            <p style={{ margin: 0, color: '#666' }}>
-              Explore todas as funcionalidades. Esta é uma versão de demonstração com dados fictícios.
-            </p>
-          </div>
+      {currentView === 'landing' && (
+        <SimpleLandingPage 
+          onAccessApp={handleAccessApp}
+        />
+      )}
 
-          <div className="nav-tabs">
-            <button 
-              className={`nav-tab ${activeTab === 'dashboard' ? 'active' : ''}`}
-              onClick={() => setActiveTab('dashboard')}
-            >
-              📊 Dashboard
-            </button>
-            <button 
-              className={`nav-tab ${activeTab === 'clients' ? 'active' : ''}`}
-              onClick={() => setActiveTab('clients')}
-            >
-              👥 Gestão de Clientes
-            </button>
-            <button 
-              className={`nav-tab ${activeTab === 'budgets' ? 'active' : ''}`}
-              onClick={() => setActiveTab('budgets')}
-            >
-              🏢 Central de Orçamentos
-            </button>
-            <button 
-              className={`nav-tab ${activeTab === 'gnss' ? 'active' : ''}`}
-              onClick={() => setActiveTab('gnss')}
-            >
-              📡 Análise GNSS
-            </button>
-          </div>
-          
-          {activeTab === 'dashboard' && <Dashboard />}
-          {activeTab === 'clients' && <ClientManager />}
-          {activeTab === 'budgets' && <BudgetHub />}
-          {activeTab === 'gnss' && <GnssUploader />}
-        </div>
-      </div>
+      {currentView === 'login' && (
+        <LoginPage 
+          onLoginSuccess={handleLoginSuccess}
+          onBackToLanding={handleBackToLanding}
+        />
+      )}
+
+      {currentView === 'app' && (
+        <DashboardLayout onLogout={handleLogout} />
+      )}
     </AuthProvider>
   );
 };
@@ -157,6 +62,9 @@ function App() {
       <Routes>
         {/* Rota pública para visualização de orçamentos */}
         <Route path="/budget/:customLink" element={<PublicBudgetViewer />} />
+        
+        {/* Rotas da aplicação principal */}
+        <Route path="/app/*" element={<MainApp />} />
         
         {/* Todas as outras rotas vão para a aplicação principal */}
         <Route path="/*" element={<MainApp />} />

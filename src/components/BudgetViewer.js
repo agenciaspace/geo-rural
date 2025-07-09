@@ -526,7 +526,7 @@ const BudgetViewer = ({ customLink }) => {
               textAlign: 'center'
             }}>
               <h4 style={{ color: '#2c5aa0', marginBottom: '1rem' }}>
-                🌱 PRECIZU
+                🌱 OnGeo
               </h4>
               <p style={{ margin: '0 0 0.5rem 0' }}>
                 Assistente IA para profissionais de georreferenciamento

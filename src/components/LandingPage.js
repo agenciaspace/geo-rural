@@ -188,7 +188,7 @@ const LandingPage = ({ onAccessApp, onConversionLanding }) => {
         <nav className="landing-nav">
           <div className="nav-brand">
             <span className="brand-icon">🌱</span>
-            <span className="brand-name">PRECIZU</span>
+            <span className="brand-name">OnGeo</span>
           </div>
           <div className="nav-links">
             <a href="#como-funciona">Como Funciona</a>
@@ -497,7 +497,7 @@ const LandingPage = ({ onAccessApp, onConversionLanding }) => {
           <div className="footer-brand">
             <div className="brand">
               <span className="brand-icon">🌱</span>
-              <span className="brand-name">PRECIZU</span>
+              <span className="brand-name">OnGeo</span>
             </div>
             <p>Assistente IA para profissionais de georreferenciamento</p>
           </div>
@@ -519,7 +519,7 @@ const LandingPage = ({ onAccessApp, onConversionLanding }) => {
         </div>
         
         <div className="footer-bottom">
-          <p>&copy; 2024 Precizu. Todos os direitos reservados.</p>
+          <p>&copy; 2024 OnGeo. Todos os direitos reservados.</p>
         </div>
       </footer>
     </div>

@@ -3,9 +3,10 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { auth } from '../config/supabase';
+import { useAuth } from '../hooks/useAuth';
 
-const Login = ({ onLoginSuccess, onBackToLanding }) => {
+const LoginPage = ({ onLoginSuccess, onBackToLanding }) => {
+  const { signIn, signUp } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
@@ -22,11 +23,11 @@ const Login = ({ onLoginSuccess, onBackToLanding }) => {
 
     try {
       if (isLogin) {
-        const { data, error } = await auth.signIn(formData.email, formData.password);
+        const { data, error } = await signIn(formData.email, formData.password);
         if (error) throw error;
         onLoginSuccess(data.user);
       } else {
-        const { data, error } = await auth.signUp(formData.email, formData.password, {
+        const { data, error } = await signUp(formData.email, formData.password, {
           name: formData.name
         });
         if (error) throw error;
@@ -37,7 +38,7 @@ const Login = ({ onLoginSuccess, onBackToLanding }) => {
         }
       }
     } catch (error) {
-      setError(error.message);
+      setError(error.message || 'Erro ao fazer login/cadastro');
     } finally {
       setLoading(false);
     }
@@ -52,17 +53,36 @@ const Login = ({ onLoginSuccess, onBackToLanding }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+      <style jsx>{`
+        @media (max-width: 768px) {
+          .login-container {
+            padding: 1rem !important;
+          }
+          
+          .brand-title {
+            font-size: 1.5rem !important;
+          }
+          
+          .card-content {
+            padding: 1rem !important;
+          }
+        }
+      `}</style>
+      <div className="w-full max-w-md login-container">
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-green-800">
-              OnGeo
+            <div className="flex items-center justify-center mb-4">
+              <span className="text-3xl mr-2">🌱</span>
+              <span className="text-2xl font-bold text-green-800 brand-title">OnGeo</span>
+            </div>
+            <CardTitle className="text-xl">
+              {isLogin ? 'Entrar no Sistema' : 'Criar Conta'}
             </CardTitle>
             <CardDescription>
-              {isLogin ? 'Faça login em sua conta' : 'Crie sua conta'}
+              {isLogin ? 'Acesse sua conta para continuar' : 'Crie uma nova conta para começar'}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="card-content">
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isLogin && (
                 <div>
@@ -114,7 +134,7 @@ const Login = ({ onLoginSuccess, onBackToLanding }) => {
 
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full bg-green-600 hover:bg-green-700"
                 disabled={loading}
               >
                 {loading ? 'Carregando...' : (isLogin ? 'Entrar' : 'Criar Conta')}
@@ -147,4 +167,4 @@ const Login = ({ onLoginSuccess, onBackToLanding }) => {
   );
 };
 
-export default Login;
+export default LoginPage;

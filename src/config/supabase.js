@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Configuração do Supabase
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://lywwxzfnhzbdkxnblvcf.supabase.co';
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5d3d4emZuaHpiZGt4bmJsdmNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjYxNTcsImV4cCI6MjA2NDcwMjE1N30.c91JJQ9yFPdjvMcH3VqrJWKu6dUSocrx0Ri9E1V8eDQ';
 
 // Cria cliente do Supabase apenas se as variáveis estiverem configuradas
 export const supabase = supabaseUrl && supabaseAnonKey 
@@ -27,8 +27,19 @@ export const auth = {
       const mockUser = {
         id: 'demo-user',
         email: email,
-        user_metadata: { name: 'Usuário Demo' }
+        user_metadata: { 
+          name: 'Usuário Demo',
+          phone: '',
+          company: '',
+          position: '',
+          city: '',
+          state: ''
+        }
       };
+      
+      // Persistir no localStorage para manter os dados entre recargas
+      localStorage.setItem('demo-user', JSON.stringify(mockUser));
+      
       return { 
         data: { user: mockUser, session: { user: mockUser } }, 
         error: null 
@@ -49,8 +60,19 @@ export const auth = {
       const mockUser = {
         id: 'demo-user',
         email: email,
-        user_metadata: { name: metadata.name || 'Usuário Demo' }
+        user_metadata: { 
+          name: metadata.name || 'Usuário Demo',
+          phone: metadata.phone || '',
+          company: metadata.company || '',
+          position: metadata.position || '',
+          city: metadata.city || '',
+          state: metadata.state || ''
+        }
       };
+      
+      // Persistir no localStorage para manter os dados entre recargas
+      localStorage.setItem('demo-user', JSON.stringify(mockUser));
+      
       return { 
         data: { user: mockUser, session: { user: mockUser } }, 
         error: null 
@@ -70,6 +92,8 @@ export const auth = {
   // Logout
   signOut: async () => {
     if (!supabase) {
+      // Limpar dados do localStorage no modo demo
+      localStorage.removeItem('demo-user');
       return { error: null };
     }
     
@@ -80,6 +104,20 @@ export const auth = {
   // Obter usuário atual
   getUser: () => {
     if (!supabase) {
+      // Verificar se há um usuário demo no localStorage
+      const storedUser = localStorage.getItem('demo-user');
+      if (storedUser) {
+        try {
+          const user = JSON.parse(storedUser);
+          return Promise.resolve({ 
+            data: { user }, 
+            error: null 
+          });
+        } catch (e) {
+          console.error('Erro ao parsear usuário demo:', e);
+        }
+      }
+      
       return Promise.resolve({ 
         data: { user: null }, 
         error: null 
@@ -99,6 +137,77 @@ export const auth = {
     }
     
     return supabase.auth.onAuthStateChange(callback);
+  },
+
+  // Atualizar perfil do usuário
+  updateProfile: async (profileData) => {
+    if (!supabase) {
+      // Modo demo - atualizar dados no localStorage
+      const storedUser = localStorage.getItem('demo-user');
+      if (storedUser) {
+        try {
+          const user = JSON.parse(storedUser);
+          const updatedUser = {
+            ...user,
+            user_metadata: {
+              ...user.user_metadata,
+              ...profileData
+            }
+          };
+          localStorage.setItem('demo-user', JSON.stringify(updatedUser));
+          console.log('Modo demo: Perfil atualizado:', profileData);
+          return { data: { user: updatedUser }, error: null };
+        } catch (e) {
+          console.error('Erro ao atualizar perfil demo:', e);
+        }
+      }
+      return { data: { user: profileData }, error: null };
+    }
+
+    const { data, error } = await supabase.auth.updateUser({
+      data: profileData
+    });
+    return { data, error };
+  },
+
+  // Alterar senha
+  updatePassword: async (newPassword) => {
+    if (!supabase) {
+      console.log('Modo demo: Senha alterada');
+      return { error: null };
+    }
+
+    const { data, error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    return { data, error };
+  },
+
+  // Atualizar email
+  updateEmail: async (newEmail) => {
+    if (!supabase) {
+      console.log('Modo demo: Email alterado para:', newEmail);
+      return { error: null };
+    }
+
+    const { data, error } = await supabase.auth.updateUser({
+      email: newEmail
+    });
+    return { data, error };
+  },
+
+  // Reenviar email de confirmação
+  resendConfirmation: async (email) => {
+    if (!supabase) {
+      console.log('Modo demo: Email de confirmação reenviado para:', email);
+      return { error: null };
+    }
+
+    const { data, error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email
+    });
+    return { data, error };
   }
 };
 
@@ -161,16 +270,21 @@ export const db = {
               client_name: 'João Silva',
               property_name: 'Fazenda São João',
               total: 2500.00,
-              status: 'sent', 
-              created_at: new Date().toISOString()
-            },
-            {
-              id: 'demo-2',
-              client_name: 'Maria Santos',
-              property_name: 'Sítio Esperança',
-              total: 1800.00,
-              status: 'approved',
-              created_at: new Date(Date.now() - 86400000).toISOString()
+              status: 'active', 
+              created_at: new Date().toISOString(),
+              budget_request: {
+                client_name: 'João Silva',
+                property_name: 'Fazenda São João',
+                city: 'São Paulo',
+                state: 'SP',
+                vertices_count: 4,
+                property_area: 10.5,
+                client_type: 'pessoa_fisica'
+              },
+              budget_result: {
+                total_price: 2500.00,
+                success: true
+              }
             }
           ], 
           error: null 
@@ -178,11 +292,18 @@ export const db = {
       }
       
       const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        // Retornar lista vazia em vez de erro para permitir uso da aplicação
+        return { data: [], error: null };
+      }
+
       const { data, error } = await supabase
         .from('budgets')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+      
       return { data, error };
     },
 
@@ -196,6 +317,76 @@ export const db = {
         .select('*')
         .eq('id', id)
         .single();
+      return { data, error };
+    }
+  },
+
+  // Clientes
+  clients: {
+    create: async (clientData) => {
+      if (!supabase) {
+        console.log('Modo demo: Cliente criado:', clientData);
+        return { data: [{ id: 'demo-client', ...clientData }], error: null };
+      }
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data, error } = await supabase
+        .from('clients')
+        .insert([{
+          ...clientData,
+          user_id: user?.id
+        }])
+        .select();
+      return { data, error };
+    },
+
+    list: async () => {
+      if (!supabase) {
+        return { data: [], error: null };
+      }
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        // Retornar lista vazia em vez de erro para permitir uso da aplicação
+        return { data: [], error: null };
+      }
+
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+      return { data, error };
+    },
+
+    getById: async (id) => {
+      if (!supabase) {
+        return { data: null, error: null };
+      }
+      
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('id', id)
+        .single();
+      return { data, error };
+    },
+
+    update: async (id, clientData) => {
+      if (!supabase) {
+        console.log('Modo demo: Cliente atualizado:', id, clientData);
+        return { data: [{ id, ...clientData }], error: null };
+      }
+      
+      const { data, error } = await supabase
+        .from('clients')
+        .update({
+          ...clientData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select();
       return { data, error };
     }
   },

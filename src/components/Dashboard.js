@@ -125,7 +125,7 @@ const Dashboard = () => {
     <div style={{ padding: '2rem' }}>
       {/* Header */}
       <div style={{ marginBottom: '2rem' }}>
-        <h2>📊 Dashboard PRECIZU</h2>
+        <h2>📊 Dashboard OnGeo</h2>
         <p>Acompanhe o desempenho dos seus orçamentos</p>
       </div>
 

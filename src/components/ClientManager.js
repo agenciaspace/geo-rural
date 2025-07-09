@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { db } from '../config/supabase';
+import { useAuth } from '../hooks/useAuth';
 
 const ClientManager = () => {
+  const { isAuthenticated } = useAuth();
   const [activeView, setActiveView] = useState('list'); // 'list', 'create', 'edit', 'view'
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);

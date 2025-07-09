@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import axios from '../config/axios';
-import API_ENDPOINTS from '../config/api';
+import { db, storage } from '../config/supabase';
+import { useAuth } from '../hooks/useAuth';
+import { API_ENDPOINTS } from '../config/api';
 
 const GnssUploader = () => {
+  const { isAuthenticated } = useAuth();
   const [file, setFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState(null);
