@@ -10,6 +10,8 @@ const ClientManager = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [successTimeout, setSuccessTimeout] = useState(null);
+  const [errorTimeout, setErrorTimeout] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Form data para criação/edição
@@ -39,6 +41,30 @@ const ClientManager = () => {
     'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
   ];
 
+  // Função para mostrar mensagem de sucesso com auto-dismiss
+  const showSuccess = (message, duration = 4000) => {
+    if (successTimeout) clearTimeout(successTimeout);
+    setSuccess(message);
+    const timeout = setTimeout(() => setSuccess(null), duration);
+    setSuccessTimeout(timeout);
+  };
+
+  // Função para mostrar mensagem de erro com auto-dismiss
+  const showError = (message, duration = 6000) => {
+    if (errorTimeout) clearTimeout(errorTimeout);
+    setError(message);
+    const timeout = setTimeout(() => setError(null), duration);
+    setErrorTimeout(timeout);
+  };
+
+  // Cleanup dos timeouts
+  useEffect(() => {
+    return () => {
+      if (successTimeout) clearTimeout(successTimeout);
+      if (errorTimeout) clearTimeout(errorTimeout);
+    };
+  }, [successTimeout, errorTimeout]);
+
   useEffect(() => {
     if (activeView === 'list') {
       loadClients();
@@ -57,14 +83,14 @@ const ClientManager = () => {
       
       if (dbError) {
         console.error('ClientManager: Erro ao carregar clientes:', dbError);
-        setError('Erro ao carregar clientes: ' + dbError.message);
+        showError('Erro ao carregar clientes: ' + dbError.message);
       } else {
         console.log('ClientManager: Clientes carregados:', data || []);
         setClients(data || []);
       }
     } catch (err) {
       console.error('ClientManager: Erro de conexão:', err);
-      setError('Erro de conexão ao carregar clientes');
+      showError('Erro de conexão ao carregar clientes');
     } finally {
       setIsLoading(false);
     }
@@ -119,7 +145,7 @@ const ClientManager = () => {
 
     // Validação básica
     if (!formData.name || !formData.email) {
-      setError('Nome e email são obrigatórios');
+      showError('Nome e email são obrigatórios');
       setIsLoading(false);
       return;
     }
@@ -132,7 +158,7 @@ const ClientManager = () => {
       }
       
       if (data && data.length > 0) {
-        setSuccess('✅ Cliente criado com sucesso!');
+        showSuccess('✅ Cliente criado com sucesso!');
         resetForm();
         setActiveView('list');
         loadClients();
@@ -140,7 +166,7 @@ const ClientManager = () => {
         throw new Error('Erro ao criar cliente - dados não retornados');
       }
     } catch (err) {
-      setError(err.message);
+      showError(err.message);
     } finally {
       setIsLoading(false);
     }
@@ -159,11 +185,11 @@ const ClientManager = () => {
         throw new Error(dbError.message || 'Erro ao atualizar cliente');
       }
       
-      setSuccess('Cliente atualizado com sucesso!');
+      showSuccess('Cliente atualizado com sucesso!');
       setActiveView('list');
       loadClients();
     } catch (err) {
-      setError(err.message);
+      showError(err.message);
     } finally {
       setIsLoading(false);
     }
@@ -183,10 +209,10 @@ const ClientManager = () => {
         throw new Error(dbError.message || 'Erro ao remover cliente');
       }
       
-      setSuccess('Cliente removido com sucesso!');
+      showSuccess('Cliente removido com sucesso!');
       loadClients();
     } catch (err) {
-      setError(err.message);
+      showError(err.message);
     } finally {
       setIsLoading(false);
     }

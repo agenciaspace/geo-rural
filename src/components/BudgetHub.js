@@ -10,6 +10,8 @@ const BudgetHub = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [successTimeout, setSuccessTimeout] = useState(null);
+  const [errorTimeout, setErrorTimeout] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingLink, setEditingLink] = useState(null);
   const [newLinkValue, setNewLinkValue] = useState('');
@@ -63,6 +65,42 @@ const BudgetHub = () => {
     'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
   ];
 
+  // Função para mostrar mensagem de sucesso com auto-dismiss
+  const showSuccess = (message, duration = 4000) => {
+    // Limpar timeout anterior se existir
+    if (successTimeout) {
+      clearTimeout(successTimeout);
+    }
+    
+    setSuccess(message);
+    const timeout = setTimeout(() => {
+      setSuccess(null);
+    }, duration);
+    setSuccessTimeout(timeout);
+  };
+
+  // Função para mostrar mensagem de erro com auto-dismiss
+  const showError = (message, duration = 6000) => {
+    // Limpar timeout anterior se existir
+    if (errorTimeout) {
+      clearTimeout(errorTimeout);
+    }
+    
+    setError(message);
+    const timeout = setTimeout(() => {
+      setError(null);
+    }, duration);
+    setErrorTimeout(timeout);
+  };
+
+  // Cleanup dos timeouts quando o componente for desmontado
+  useEffect(() => {
+    return () => {
+      if (successTimeout) clearTimeout(successTimeout);
+      if (errorTimeout) clearTimeout(errorTimeout);
+    };
+  }, [successTimeout, errorTimeout]);
+
   useEffect(() => {
     if (activeView === 'list') {
       loadBudgets();
@@ -107,14 +145,14 @@ const BudgetHub = () => {
       
       if (dbError) {
         console.error('BudgetHub: Erro ao carregar orçamentos:', dbError);
-        setError('Erro ao carregar orçamentos: ' + dbError.message);
+        showError('Erro ao carregar orçamentos: ' + dbError.message);
       } else {
         console.log('BudgetHub: Orçamentos carregados:', data || []);
         setBudgets(data || []);
       }
     } catch (err) {
       console.error('BudgetHub: Erro de conexão:', err);
-      setError('Erro de conexão ao carregar orçamentos');
+      showError('Erro de conexão ao carregar orçamentos');
     } finally {
       setIsLoading(false);
     }
@@ -127,14 +165,14 @@ const BudgetHub = () => {
       
       if (dbError) {
         console.error('Erro ao carregar clientes:', dbError);
-        setError('Erro ao carregar clientes: ' + dbError.message);
+        showError('Erro ao carregar clientes: ' + dbError.message);
       } else {
         console.log('Clientes carregados:', data);
         setClients(data || []);
       }
     } catch (err) {
       console.error('Erro ao carregar clientes:', err);
-      setError('Erro de conexão ao carregar clientes');
+      showError('Erro de conexão ao carregar clientes');
     }
   };
 
@@ -213,7 +251,7 @@ const BudgetHub = () => {
         handleClientSelection(data[0].id);
         setUseExistingClient(true);
         setShowClientForm(false);
-        setSuccess('✅ Cliente criado com sucesso!');
+        showSuccess('✅ Cliente criado com sucesso!');
         
         // Reset new client form
         setNewClientData({
@@ -291,7 +329,7 @@ const BudgetHub = () => {
     // Validação adicional
     if (!isFormValid()) {
       console.log('BudgetHub: Formulário inválido, parando aqui');
-      setError('Por favor, preencha todos os campos obrigatórios');
+      showError('Por favor, preencha todos os campos obrigatórios');
       setIsLoading(false);
       return;
     }
@@ -373,12 +411,12 @@ const BudgetHub = () => {
       const linkMessage = budgetData.custom_link ? 
         `Link automático: ${budgetData.custom_link}` : 
         `ID: ${savedBudget[0]?.id || 'novo'}`;
-      setSuccess(`✅ Orçamento criado com sucesso! ${linkMessage}`);
+      showSuccess(`✅ Orçamento criado com sucesso! ${linkMessage}`);
       resetForm();
       setActiveView('list');
       loadBudgets();
     } catch (err) {
-      setError(err.message);
+      showError(err.message);
     } finally {
       setIsLoading(false);
     }
@@ -409,7 +447,7 @@ const BudgetHub = () => {
       const result = await response.json();
 
       if (result.success) {
-        setSuccess('Orçamento atualizado com sucesso!');
+        showSuccess('Orçamento atualizado com sucesso!');
         setActiveView('list');
         loadBudgets();
       } else {
@@ -434,7 +472,7 @@ const BudgetHub = () => {
       const result = await response.json();
 
       if (result.success) {
-        setSuccess('Orçamento excluído com sucesso!');
+        showSuccess('Orçamento excluído com sucesso!');
         loadBudgets();
       } else {
         throw new Error(result.detail || 'Erro ao excluir orçamento');
@@ -477,7 +515,7 @@ const BudgetHub = () => {
       if (result.success) {
         const fullLink = `${window.location.origin}/budget/${result.custom_link}`;
         navigator.clipboard.writeText(fullLink);
-        setSuccess(`✅ Link atualizado e copiado: ${result.custom_link}`);
+        showSuccess(`✅ Link atualizado e copiado: ${result.custom_link}`);
         loadBudgets();
         cancelEditingLink();
       } else {
@@ -510,7 +548,7 @@ const BudgetHub = () => {
       const result = await response.json();
 
       if (result.success) {
-        setSuccess('✅ Orçamento reenviado com sucesso! O cliente receberá a nova proposta.');
+        showSuccess('✅ Orçamento reenviado com sucesso! O cliente receberá a nova proposta.');
         setActiveView('list');
         loadBudgets();
       } else {
@@ -526,7 +564,7 @@ const BudgetHub = () => {
   const handleCopyLink = (customLink) => {
     const fullLink = `${window.location.origin}/budget/${customLink}`;
     navigator.clipboard.writeText(fullLink);
-    setSuccess(`Link copiado: ${customLink}`);
+    showSuccess(`📋 Link copiado: ${customLink}`, 3000); // 3 segundos
   };
 
   const formatCurrency = (value) => {

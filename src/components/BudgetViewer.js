@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { db } from '../config/supabase';
 
 const BudgetViewer = ({ customLink }) => {
   const [budget, setBudget] = useState(null);
@@ -18,21 +19,29 @@ const BudgetViewer = ({ customLink }) => {
   const loadBudget = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/budgets/link/${customLink}`);
+      setError(null);
       
-      if (response.status === 404) {
-        setError('Link não encontrado. Verifique se o endereço está correto.');
+      console.log('BudgetViewer: Buscando orçamento com link:', customLink);
+      const { data, error } = await db.budgets.getByCustomLink(customLink);
+      
+      console.log('BudgetViewer: Resultado da busca:', { data, error });
+      
+      if (error) {
+        if (error.code === 'PGRST116') {
+          setError('Link não encontrado. Verifique se o endereço está correto.');
+        } else {
+          setError('Erro ao carregar orçamento: ' + error.message);
+        }
         return;
       }
 
-      const data = await response.json();
-      
-      if (data.success) {
-        setBudget(data.budget);
+      if (data) {
+        setBudget(data);
       } else {
-        setError('Erro ao carregar orçamento');
+        setError('Orçamento não encontrado');
       }
     } catch (err) {
+      console.error('BudgetViewer: Erro ao carregar orçamento:', err);
       setError('Erro de conexão. Tente novamente mais tarde.');
     } finally {
       setIsLoading(false);
@@ -84,18 +93,20 @@ const BudgetViewer = ({ customLink }) => {
     
     try {
       setIsSubmitting(true);
-      const response = await fetch(`/api/budgets/link/${customLink}/approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
+      setError(null);
+      
+      const { data, error } = await db.budgets.approveByCustomLink(customLink);
 
-      const result = await response.json();
+      if (error) {
+        setError('Erro ao aprovar orçamento: ' + error.message);
+        return;
+      }
 
-      if (result.success) {
+      if (data && data.length > 0) {
         setSuccess('✅ Orçamento aprovado com sucesso! O profissional será notificado.');
         setBudget(prev => ({ ...prev, status: 'approved', approval_date: new Date().toISOString() }));
       } else {
-        setError(result.detail || 'Erro ao aprovar orçamento');
+        setError('Erro ao aprovar orçamento');
       }
     } catch (err) {
       setError('Erro de conexão. Tente novamente.');
@@ -112,15 +123,16 @@ const BudgetViewer = ({ customLink }) => {
 
     try {
       setIsSubmitting(true);
-      const response = await fetch(`/api/budgets/link/${customLink}/reject`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ comment: rejectComment })
-      });
+      setError(null);
+      
+      const { data, error } = await db.budgets.rejectByCustomLink(customLink, rejectComment);
 
-      const result = await response.json();
+      if (error) {
+        setError('Erro ao rejeitar orçamento: ' + error.message);
+        return;
+      }
 
-      if (result.success) {
+      if (data && data.length > 0) {
         setSuccess('❌ Orçamento rejeitado. O profissional será notificado com seus comentários.');
         setBudget(prev => ({ 
           ...prev, 
@@ -131,7 +143,7 @@ const BudgetViewer = ({ customLink }) => {
         setShowRejectForm(false);
         setRejectComment('');
       } else {
-        setError(result.detail || 'Erro ao rejeitar orçamento');
+        setError('Erro ao rejeitar orçamento');
       }
     } catch (err) {
       setError('Erro de conexão. Tente novamente.');

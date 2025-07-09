@@ -45,7 +45,7 @@ RECOMENDAÇÕES:
 - Evitar obstruções e interferências durante coleta
 
 ========================================
-Precizu - Análise Automatizada
+OnGeo - Análise Automatizada
 """
             }
             

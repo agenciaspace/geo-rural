@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Precizu - Backend API
+OnGeo - Backend API
 Sistema de análise GNSS e georreferenciamento
 """
 
@@ -60,7 +60,7 @@ class UploadSizeMiddleware(BaseHTTPMiddleware):
 
 # Inicializar FastAPI
 app = FastAPI(
-    title="Precizu API",
+    title="OnGeo API",
     description="Sistema de análise GNSS e georreferenciamento",
     version="1.0.0"
 )
@@ -1775,7 +1775,7 @@ RECOMENDAÇÕES:
     
     report += """
 ==============================================
-Precizu - Processamento Geodésico Completo
+OnGeo - Processamento Geodésico Completo
 Sistema homologado para georreferenciamento rural
 """
     
@@ -1862,7 +1862,7 @@ PARECER PARA GEORREFERENCIAMENTO:
     
     report += """
 ==============================================
-Precizu - Processamento Geodésico Completo
+OnGeo - Processamento Geodésico Completo
 Sistema homologado para georreferenciamento rural
 """
     
@@ -2017,7 +2017,7 @@ VALIDAÇÃO TÉCNICA:
 ✓ Avaliação de qualidade geodésica
 
 =========================================================
-Precizu - Sistema de Análise Geodésica Profissional
+OnGeo - Sistema de Análise Geodésica Profissional
 Análise automatizada conforme padrões técnicos INCRA
 """
     
@@ -2077,7 +2077,7 @@ RECOMENDAÇÕES:
 - Evitar obstruções e interferências durante coleta
 
 ========================================
-Precizu - Análise Automatizada
+OnGeo - Análise Automatizada
 """
     
     return report
@@ -2921,7 +2921,7 @@ async def api_info():
             budget_status = f"error: {str(e)}"
         
         return {
-            "message": "Precizu API",
+            "message": "OnGeo API",
             "version": "1.0.0",
             "status": "running",
             "budget_manager": {
@@ -2941,7 +2941,7 @@ async def api_info():
     except Exception as e:
         logger.error(f"Error in api_info: {e}")
         return {
-            "message": "Precizu API", 
+            "message": "OnGeo API", 
             "version": "1.0.0",
             "status": "error",
             "error": str(e)
@@ -2958,9 +2958,9 @@ async def serve_react_app():
     else:
         return HTMLResponse("""
         <html>
-            <head><title>Precizu</title></head>
+            <head><title>OnGeo</title></head>
             <body>
-                <h1>🌱 Precizu</h1>
+                <h1>🌱 OnGeo</h1>
                 <p>Frontend React não encontrado. Execute o build primeiro:</p>
                 <code>npm run build</code>
                 <br><br>

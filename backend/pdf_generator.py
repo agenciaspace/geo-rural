@@ -552,7 +552,7 @@ class PDFGenerator:
         
         # Rodapé
         story.append(Paragraph("___________________________________", self.styles['BodyStyle']))
-        story.append(Paragraph("Precizu", self.styles['BodyStyle']))
+        story.append(Paragraph("OnGeo", self.styles['BodyStyle']))
         story.append(Paragraph("Engenharia e Georreferenciamento", self.styles['BodyStyle']))
         
         generation_date = dt.now().strftime("%d/%m/%Y às %H:%M")

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Precizu - Deploy Simples para Vercel
-echo "🚀 Precizu - Deploy para Vercel..."
+# OnGeo - Deploy Simples para Vercel
+echo "🚀 OnGeo - Deploy para Vercel..."
 
 # Cores
 RED='\033[0;31m'

@@ -1,4 +1,4 @@
-# Precizu 🌱
+# OnGeo 🌱
 
 Plataforma completa de georreferenciamento rural com IA, simulador de orçamentos e análise GNSS.
 
@@ -14,8 +14,8 @@ Para rodar o projeto localmente para testes e desenvolvimento:
 ### Setup Automatizado
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/seu-usuario/precizu.git
-cd precizu
+git clone https://github.com/seu-usuario/ongeo.git
+cd ongeo
 
 # 2. Configure o ambiente
 ./dev-setup.sh
@@ -41,8 +41,8 @@ cd precizu
 
 ### 1. Clone e Configure
 ```bash
-git clone https://github.com/seu-usuario/precizu.git
-cd precizu
+git clone https://github.com/seu-usuario/ongeo.git
+cd ongeo
 ```
 
 ### 2. Configure o Supabase
@@ -82,7 +82,7 @@ npm start
 ## 📁 Estrutura do Projeto
 
 ```
-precizu/
+ongeo/
 ├── api/                 # Vercel Functions (Python)
 ├── frontend/            # React App com shadcn/ui
 ├── supabase/           # Scripts SQL do banco
@@ -155,8 +155,8 @@ MIT License - veja [LICENSE](LICENSE) para detalhes.
 
 ## 📞 Suporte
 
-- 📧 Email: suporte@precizu.pro
-- 💬 Issues: [GitHub Issues](https://github.com/seu-usuario/precizu/issues)
+- 📧 Email: suporte@ongeo.pro
+- 💬 Issues: [GitHub Issues](https://github.com/seu-usuario/ongeo/issues)
 - 📖 Docs: [Documentação Completa](./docs/)
 
 ---

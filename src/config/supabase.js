@@ -331,6 +331,66 @@ export const db = {
         .eq('id', id)
         .single();
       return { data, error };
+    },
+
+    // Buscar orçamento por link personalizado (rota pública)
+    getByCustomLink: async (customLink) => {
+      if (!supabase) {
+        return { 
+          data: null, 
+          error: { message: 'Supabase não configurado' } 
+        };
+      }
+      
+      const { data, error } = await supabase
+        .from('budgets')
+        .select('*')
+        .eq('custom_link', customLink)
+        .single();
+      return { data, error };
+    },
+
+    // Aprovar orçamento via link
+    approveByCustomLink: async (customLink) => {
+      if (!supabase) {
+        return { 
+          data: null, 
+          error: { message: 'Supabase não configurado' } 
+        };
+      }
+      
+      const { data, error } = await supabase
+        .from('budgets')
+        .update({
+          status: 'approved',
+          approval_date: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('custom_link', customLink)
+        .select();
+      return { data, error };
+    },
+
+    // Rejeitar orçamento via link
+    rejectByCustomLink: async (customLink, comment) => {
+      if (!supabase) {
+        return { 
+          data: null, 
+          error: { message: 'Supabase não configurado' } 
+        };
+      }
+      
+      const { data, error } = await supabase
+        .from('budgets')
+        .update({
+          status: 'rejected',
+          rejection_date: new Date().toISOString(),
+          rejection_comment: comment,
+          updated_at: new Date().toISOString()
+        })
+        .eq('custom_link', customLink)
+        .select();
+      return { data, error };
     }
   },
 
