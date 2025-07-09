@@ -100,14 +100,20 @@ const BudgetHub = () => {
       setIsLoading(true);
       setError(null);
       
+      console.log('BudgetHub: Carregando orçamentos...');
       const { data, error: dbError } = await db.budgets.list();
       
+      console.log('BudgetHub: Resultado da consulta de orçamentos:', { data, error: dbError });
+      
       if (dbError) {
+        console.error('BudgetHub: Erro ao carregar orçamentos:', dbError);
         setError('Erro ao carregar orçamentos: ' + dbError.message);
       } else {
+        console.log('BudgetHub: Orçamentos carregados:', data || []);
         setBudgets(data || []);
       }
     } catch (err) {
+      console.error('BudgetHub: Erro de conexão:', err);
       setError('Erro de conexão ao carregar orçamentos');
     } finally {
       setIsLoading(false);
@@ -311,11 +317,30 @@ const BudgetHub = () => {
         throw new Error(budgetResult.message || 'Erro ao calcular orçamento');
       }
 
-      // Depois salva o orçamento
+      // Depois salva o orçamento no Supabase
       const budgetData = {
-        ...formData,
+        client_name: formData.client_name,
+        client_email: formData.client_email,
+        client_phone: formData.client_phone,
+        property_name: formData.property_name,
+        state: formData.state,
+        city: formData.city,
         vertices_count: parseInt(formData.vertices_count),
-        property_area: parseFloat(formData.property_area)
+        property_area: parseFloat(formData.property_area),
+        client_type: formData.client_type,
+        is_urgent: formData.is_urgent,
+        includes_topography: formData.includes_topography,
+        includes_environmental: formData.includes_environmental,
+        additional_notes: formData.additional_notes,
+        total: budgetResult.total_price || budgetResult.total_cost,
+        budget_request: {
+          ...formData,
+          vertices_count: parseInt(formData.vertices_count),
+          property_area: parseFloat(formData.property_area)
+        },
+        budget_result: budgetResult,
+        custom_link: `orcamento-${Date.now()}`, // Gerar link único
+        status: 'active'
       };
       
       // Se tem client_id, incluir no orçamento
@@ -323,25 +348,24 @@ const BudgetHub = () => {
         budgetData.client_id = formData.client_id;
       }
       
-      const saveResponse = await fetch('/api/budgets/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(budgetData)
-      });
-
-      const saveResult = await saveResponse.json();
-
-      if (saveResult.success) {
-        const linkMessage = saveResult.custom_link ? 
-          `Link automático: ${saveResult.custom_link}` : 
-          `ID: ${saveResult.budget_id}`;
-        setSuccess(`✅ Orçamento criado com sucesso! ${linkMessage}`);
-        resetForm();
-        setActiveView('list');
-        loadBudgets();
-      } else {
-        throw new Error(saveResult.detail || 'Erro ao salvar orçamento');
+      console.log('BudgetHub: Salvando orçamento no Supabase:', budgetData);
+      
+      const { data: savedBudget, error: saveError } = await db.budgets.create(budgetData);
+      
+      if (saveError) {
+        console.error('BudgetHub: Erro ao salvar orçamento:', saveError);
+        throw new Error(saveError.message || 'Erro ao salvar orçamento');
       }
+      
+      console.log('BudgetHub: Orçamento salvo com sucesso:', savedBudget);
+      
+      const linkMessage = budgetData.custom_link ? 
+        `Link automático: ${budgetData.custom_link}` : 
+        `ID: ${savedBudget[0]?.id || 'novo'}`;
+      setSuccess(`✅ Orçamento criado com sucesso! ${linkMessage}`);
+      resetForm();
+      setActiveView('list');
+      loadBudgets();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -507,9 +531,20 @@ const BudgetHub = () => {
   };
 
   const filteredBudgets = budgets.filter(budget =>
-    budget.budget_request.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    budget.budget_request.property_name.toLowerCase().includes(searchTerm.toLowerCase())
+    budget.budget_request && budget.budget_request.client_name && 
+    budget.budget_request.property_name &&
+    (budget.budget_request.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    budget.budget_request.property_name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  // Debug logs
+  console.log('BudgetHub: Estado atual da lista:', {
+    budgets,
+    filteredBudgets,
+    searchTerm,
+    isLoading,
+    activeView
+  });
 
   const isFormValid = () => {
     const hasClientData = useExistingClient ? 
