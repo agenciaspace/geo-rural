@@ -140,8 +140,10 @@ const BudgetViewer = ({ customLink }) => {
         ? 'http://localhost:8000'
         : window.location.origin;
       
-      console.log('📄 Gerando PDF...', { baseUrl, budget_request: budget.budget_request });
+      console.log('📄 Gerando PDF...', { baseUrl, budget });
       
+      // Criar um novo endpoint ou enviar dados no formato esperado
+      // O backend espera recalcular, então vamos enviar apenas os dados da requisição
       const response = await fetch(`${baseUrl}/api/generate-proposal-pdf`, {
         method: 'POST',
         headers: {

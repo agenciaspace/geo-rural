@@ -2355,12 +2355,22 @@ async def generate_proposal_pdf(request: BudgetRequestModel):
         if budget_calculator:
             budget_result = budget_calculator.calculate_budget(budget_request)
         else:
-            budget_result = {"total_cost": 5000.0}
+            # Fallback quando calculator não está disponível
+            budget_result = {
+                "total_price": 5000.0,
+                "breakdown": [
+                    {"item": "Serviço de georreferenciamento", "value": 5000.0}
+                ],
+                "estimated_days": 15
+            }
         
-        # Prepara dados para PDF
+        # Prepara dados para PDF no formato esperado pelo pdf_generator
         budget_data = {
             'request_data': asdict(budget_request),
-            'budget_result': budget_result
+            'budget_result': budget_result,
+            # O pdf_generator espera estes campos diretamente
+            'breakdown': budget_result.get('breakdown', []),
+            'total_price': budget_result.get('total_price', 0.0)
         }
         
         # Gera PDF
@@ -2378,6 +2388,8 @@ async def generate_proposal_pdf(request: BudgetRequestModel):
     
     except Exception as e:
         logger.error(f"Erro na geração de PDF: {str(e)}")
+        logger.error(f"Budget data: {budget_data if 'budget_data' in locals() else 'não definido'}")
+        logger.error(f"Budget result: {budget_result if 'budget_result' in locals() else 'não definido'}")
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 @app.post("/api/generate-gnss-report-pdf")
