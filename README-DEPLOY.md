@@ -29,7 +29,7 @@ vercel
 # - Detectará automaticamente as configurações
 ```
 
-## Estrutura do Projeto
+## Estrutura do Projeto OnGeo
 
 ```
 georural-pro/
