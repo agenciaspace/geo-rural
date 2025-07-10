@@ -4,6 +4,12 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
 
+// Debug logs temporários - REMOVER APÓS CONFIRMAR QUE FUNCIONA
+console.log('🔥 SUPABASE CONFIG CHECK:');
+console.log('🔥 URL:', supabaseUrl ? '✅ Configurado' : '❌ Não configurado');
+console.log('🔥 KEY:', supabaseAnonKey ? '✅ Configurado' : '❌ Não configurado');
+console.log('🔥 Cliente Supabase será:', supabaseUrl && supabaseAnonKey ? 'CRIADO' : 'NULL (modo demo)');
+
 // Cria cliente do Supabase apenas se as variáveis estiverem configuradas
 export const supabase = supabaseUrl && supabaseAnonKey 
   ? createClient(supabaseUrl, supabaseAnonKey, {
