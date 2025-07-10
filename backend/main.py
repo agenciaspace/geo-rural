@@ -2370,7 +2370,8 @@ async def generate_proposal_pdf(request: BudgetRequestModel):
             'budget_result': budget_result,
             # O pdf_generator espera estes campos diretamente
             'breakdown': budget_result.get('breakdown', []),
-            'total_price': budget_result.get('total_price', 0.0)
+            'total_price': budget_result.get('total_price', 0.0),
+            'estimated_days': budget_result.get('estimated_days', 15)
         }
         
         # Gera PDF
