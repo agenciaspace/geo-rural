@@ -81,10 +81,14 @@ export const auth = {
       email,
       password,
       options: {
-        data: metadata
+        data: metadata,
+        emailRedirectTo: window.location.origin + '/app'
       }
     });
 
+    // Log para debug
+    console.log('🔥 Supabase signUp response:', { data, error });
+    
     // Retornar resultado bruto do Supabase
     return { data, error };
   },
