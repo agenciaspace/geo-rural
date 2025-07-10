@@ -151,9 +151,16 @@ class BudgetManager:
         self.use_supabase = SUPABASE_AVAILABLE and self.supabase_url and self.supabase_key
         
         if self.use_supabase:
-            self.supabase: Client = create_client(self.supabase_url, self.supabase_key)
-            logger.info("Using Supabase for budget storage")
-        else:
+            try:
+                self.supabase: Client = create_client(self.supabase_url, self.supabase_key)
+                logger.info("Using Supabase for budget storage")
+            except Exception as e:
+                logger.error(f"Failed to initialize Supabase client: {e}")
+                logger.info("Falling back to SQLite storage")
+                self.use_supabase = False
+                self.supabase = None
+        
+        if not self.use_supabase:
             logger.info("Using SQLite fallback for budget storage")
             # Fallback para SQLite
             if storage_dir is None:
@@ -166,7 +173,7 @@ class BudgetManager:
             except Exception as e:
                 logger.warning(f"Could not create storage directory {self.storage_dir}: {e}")
                 # Fallback to temp directory
-                self.storage_dir = Path(tempfile.gettempdir()) / "precizu_budgets"
+                self.storage_dir = Path(tempfile.gettempdir()) / "ongeo_budgets"
                 self.storage_dir.mkdir(exist_ok=True)
                 logger.info(f"Using fallback storage directory: {self.storage_dir.absolute()}")
             
