@@ -397,7 +397,7 @@ class PDFGenerator:
         # Assinatura
         story.append(Spacer(1, 30))
         story.append(Paragraph("___________________________________", self.styles['BodyStyle']))
-        story.append(Paragraph("<b>PRECIZU</b>", self.styles['BodyStyle']))
+        story.append(Paragraph("<b>OnGeo</b>", self.styles['BodyStyle']))
         story.append(Paragraph("Sistema de Análise Geodésica Profissional", self.styles['BodyStyle']))
         story.append(Paragraph("Análise automatizada conforme padrões técnicos INCRA", 
                               ParagraphStyle('FooterStyle', parent=self.styles['BodyStyle'],
@@ -413,7 +413,7 @@ class PDFGenerator:
         
         if filename is None:
             timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"proposta_precizu_{timestamp}.pdf"
+            filename = f"proposta_ongeo_{timestamp}.pdf"
         
         # Cria arquivo temporário
         temp_dir = tempfile.gettempdir()
@@ -433,7 +433,7 @@ class PDFGenerator:
         story = []
         
         # Cabeçalho
-        story.append(Paragraph("PRECIZU", self.styles['TitleStyle']))
+        story.append(Paragraph("OnGeo", self.styles['TitleStyle']))
         story.append(Paragraph("Proposta de Serviços de Georreferenciamento", self.styles['SubtitleStyle']))
         story.append(Spacer(1, 20))
         
