@@ -135,7 +135,14 @@ const BudgetViewer = ({ customLink }) => {
 
   const generatePDF = async () => {
     try {
-      const response = await fetch('/api/generate-proposal-pdf', {
+      // Determinar a URL base correta
+      const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:8000'
+        : window.location.origin;
+      
+      console.log('📄 Gerando PDF...', { baseUrl, budget_request: budget.budget_request });
+      
+      const response = await fetch(`${baseUrl}/api/generate-proposal-pdf`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -144,20 +151,25 @@ const BudgetViewer = ({ customLink }) => {
       });
 
       if (!response.ok) {
-        throw new Error('Erro ao gerar PDF');
+        const errorText = await response.text();
+        console.error('❌ Erro na resposta:', response.status, errorText);
+        throw new Error(`Erro ao gerar PDF: ${response.status}`);
       }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `proposta_${budget.budget_request.client_name.replace(' ', '_')}.pdf`);
+      link.setAttribute('download', `proposta_${budget.budget_request.client_name.replace(/\s+/g, '_')}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
+      
+      console.log('✅ PDF gerado com sucesso!');
     } catch (err) {
-      alert('Erro ao gerar PDF. Tente novamente.');
+      console.error('💥 Erro ao gerar PDF:', err);
+      alert('Erro ao gerar PDF. Por favor, tente novamente mais tarde.');
     }
   };
 
@@ -168,20 +180,25 @@ const BudgetViewer = ({ customLink }) => {
       setIsSubmitting(true);
       setError(null);
       
+      console.log('✅ Aprovando orçamento:', customLink);
       const { data, error } = await db.budgets.approveByCustomLink(customLink);
+      console.log('📊 Resultado aprovação:', { data, error });
 
       if (error) {
+        console.error('❌ Erro ao aprovar:', error);
         setError('Erro ao aprovar orçamento: ' + error.message);
         return;
       }
 
       if (data && data.length > 0) {
+        console.log('✅ Orçamento aprovado com sucesso!');
         setSuccess('Orçamento aprovado com sucesso! O profissional será notificado.');
         setBudget(prev => ({ ...prev, status: 'approved', approval_date: new Date().toISOString() }));
       } else {
         setError('Erro ao aprovar orçamento');
       }
     } catch (err) {
+      console.error('💥 Erro de conexão:', err);
       setError('Erro de conexão. Tente novamente.');
     } finally {
       setIsSubmitting(false);
@@ -198,14 +215,18 @@ const BudgetViewer = ({ customLink }) => {
       setIsSubmitting(true);
       setError(null);
       
+      console.log('❌ Rejeitando orçamento:', customLink, 'Motivo:', rejectComment);
       const { data, error } = await db.budgets.rejectByCustomLink(customLink, rejectComment);
+      console.log('📊 Resultado rejeição:', { data, error });
 
       if (error) {
+        console.error('❌ Erro ao rejeitar:', error);
         setError('Erro ao rejeitar orçamento: ' + error.message);
         return;
       }
 
       if (data && data.length > 0) {
+        console.log('✅ Orçamento rejeitado com sucesso!');
         setSuccess('Orçamento rejeitado. O profissional será notificado com seus comentários.');
         setBudget(prev => ({ 
           ...prev, 
@@ -219,16 +240,42 @@ const BudgetViewer = ({ customLink }) => {
         setError('Erro ao rejeitar orçamento');
       }
     } catch (err) {
+      console.error('💥 Erro de conexão:', err);
       setError('Erro de conexão. Tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const copyLinkToClipboard = () => {
-    const fullLink = `${window.location.origin}/budget/${customLink}`;
-    navigator.clipboard.writeText(fullLink);
-    alert('Link copiado para a área de transferência!');
+  const copyLinkToClipboard = async () => {
+    try {
+      const fullLink = `${window.location.origin}/budget/${customLink}`;
+      await navigator.clipboard.writeText(fullLink);
+      setSuccess('Link copiado para a área de transferência!');
+      
+      // Limpar mensagem após 3 segundos
+      setTimeout(() => {
+        setSuccess(null);
+      }, 3000);
+    } catch (err) {
+      console.error('Erro ao copiar link:', err);
+      // Fallback para browsers antigos
+      const textArea = document.createElement('textarea');
+      textArea.value = `${window.location.origin}/budget/${customLink}`;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setSuccess('Link copiado para a área de transferência!');
+        setTimeout(() => setSuccess(null), 3000);
+      } catch (err) {
+        setError('Não foi possível copiar o link. Por favor, copie manualmente.');
+        setTimeout(() => setError(null), 3000);
+      }
+      document.body.removeChild(textArea);
+    }
   };
 
   if (isLoading) {
@@ -259,7 +306,9 @@ const BudgetViewer = ({ customLink }) => {
         <h2 style={{ color: '#333', marginBottom: '1rem' }}>Orçamento Não Encontrado</h2>
         <p style={{ color: '#666', marginBottom: '2rem' }}>{error}</p>
         <button
-          onClick={() => window.location.href = '/'}
+          onClick={() => {
+            window.location.href = '/';
+          }}
           style={{
             background: '#666',
             color: 'white',
@@ -267,8 +316,11 @@ const BudgetViewer = ({ customLink }) => {
             padding: '0.8rem 1.5rem',
             borderRadius: '4px',
             fontSize: '1rem',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            transition: 'all 0.2s'
           }}
+          onMouseOver={(e) => e.target.style.background = '#555'}
+          onMouseOut={(e) => e.target.style.background = '#666'}
         >
           Voltar ao Início
         </button>
@@ -302,6 +354,16 @@ const BudgetViewer = ({ customLink }) => {
           <p style={{ margin: 0, color: '#666', fontSize: '1rem' }}>
             Georreferenciamento e Serviços Técnicos
           </p>
+          {customLink && (
+            <p style={{ 
+              margin: '0.5rem 0 0 0', 
+              color: '#999', 
+              fontSize: '0.85rem',
+              wordBreak: 'break-all'
+            }}>
+              Link: {window.location.origin}/budget/{customLink}
+            </p>
+          )}
         </div>
 
         <div style={{ padding: isMobile ? '1rem' : '2rem' }}>
@@ -847,7 +909,9 @@ const BudgetViewer = ({ customLink }) => {
               Baixar Proposta em PDF
             </button>
             <button
-              onClick={() => window.location.href = '/'}
+              onClick={() => {
+                window.location.href = '/';
+              }}
               style={{
                 background: 'transparent',
                 color: '#666',
@@ -867,7 +931,17 @@ const BudgetViewer = ({ customLink }) => {
               Conhecer a Plataforma
             </button>
             <button
-              onClick={() => window.location.href = '/#budgets'}
+              onClick={() => {
+                // Navegar para a home e depois para a seção de orçamentos
+                window.location.href = '/';
+                // Usar timeout para garantir que a navegação aconteça depois do carregamento
+                setTimeout(() => {
+                  const budgetsSection = document.getElementById('budgets');
+                  if (budgetsSection) {
+                    budgetsSection.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }, 100);
+              }}
               style={{
                 background: '#666',
                 color: 'white',
@@ -885,6 +959,26 @@ const BudgetViewer = ({ customLink }) => {
               }}
             >
               Central de Orçamentos
+            </button>
+            <button
+              onClick={copyLinkToClipboard}
+              style={{
+                background: 'transparent',
+                color: '#666',
+                border: '1px solid #d0d0d0',
+                padding: isMobile ? '1rem' : '0.8rem 1.5rem',
+                borderRadius: '4px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                width: isMobile ? '100%' : 'auto',
+                minWidth: isMobile ? '100%' : '200px',
+                transition: 'all 0.2s',
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation'
+              }}
+            >
+              Copiar Link
             </button>
           </div>
 
