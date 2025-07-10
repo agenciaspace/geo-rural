@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import DashboardPage from './DashboardPage';
 import BudgetHub from './BudgetHub';
+import BudgetDetails from './BudgetDetails';
 import ClientManager from './ClientManager';
 import GnssUploader from './GnssUploader';
 import UserProfile from './UserProfile';
@@ -195,6 +196,7 @@ const DashboardLayout = ({ onLogout }) => {
             <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/budgets" element={<BudgetHub />} />
+            <Route path="/budgets/:budgetId" element={<BudgetDetails />} />
             <Route path="/clients" element={<ClientManager />} />
             <Route path="/gnss" element={<GnssUploader />} />
             <Route path="/profile" element={<UserProfile />} />

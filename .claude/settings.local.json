@@ -44,7 +44,12 @@
       "Bash(find:*)",
       "WebFetch(domain:precizu.up.railway.app)",
       "WebFetch(domain:g.co)",
-      "Bash(touch:*)"
+      "Bash(touch:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run:*)",
+      "Bash(npm start)",
+      "Bash(pkill:*)",
+      "Bash(true)"
     ],
     "deny": []
   }

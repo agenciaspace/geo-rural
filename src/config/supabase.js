@@ -330,6 +330,7 @@ export const db = {
         .select('*')
         .eq('id', id)
         .single();
+      
       return { data, error };
     },
 
@@ -455,6 +456,27 @@ export const db = {
         console.error('rejectByCustomLink error:', err);
         return { data: null, error: err };
       }
+    },
+
+    // Atualizar orçamento
+    update: async (id, budgetData) => {
+      if (!supabase) {
+        return { 
+          data: null, 
+          error: { message: 'Supabase não configurado' } 
+        };
+      }
+      
+      const { data, error } = await supabase
+        .from('budgets')
+        .update({
+          budget_request: budgetData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select();
+      
+      return { data, error };
     }
   },
 

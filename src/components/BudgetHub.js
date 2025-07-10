@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { db } from '../config/supabase';
 import { useAuth } from '../hooks/useAuth';
 
 const BudgetHub = () => {
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [activeView, setActiveView] = useState('list'); // 'list', 'create', 'edit', 'view', 'resubmit'
   const [budgets, setBudgets] = useState([]);
   const [selectedBudget, setSelectedBudget] = useState(null);
@@ -429,32 +431,25 @@ const BudgetHub = () => {
     setError(null);
 
     try {
-      const response = await fetch(`/api/budgets/${selectedBudget.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          vertices_count: parseInt(formData.vertices_count),
-          property_area: parseFloat(formData.property_area)
-        })
-      });
+      // Preparar dados para atualização
+      const budgetRequestData = {
+        ...formData,
+        vertices_count: parseInt(formData.vertices_count) || 4,
+        property_area: parseFloat(formData.property_area) || 1.0
+      };
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Erro HTTP: ${response.status}`);
+      // Usar o método update do Supabase
+      const { data, error } = await db.budgets.update(selectedBudget.id, budgetRequestData);
+
+      if (error) {
+        throw new Error(error.message || 'Erro ao atualizar orçamento');
       }
 
-      const result = await response.json();
-
-      if (result.success) {
-        showSuccess('Orçamento atualizado com sucesso!');
-        setActiveView('list');
-        loadBudgets();
-      } else {
-        throw new Error(result.detail || 'Erro ao atualizar orçamento');
-      }
+      showSuccess('Orçamento atualizado com sucesso!');
+      setActiveView('list');
+      loadBudgets();
     } catch (err) {
-      setError(err.message);
+      showError('Erro ao atualizar orçamento: ' + err.message);
     } finally {
       setIsLoading(false);
     }
@@ -736,8 +731,24 @@ const BudgetHub = () => {
                   border: '1px solid #e9ecef',
                   borderRadius: '8px',
                   padding: '1.5rem',
-                  background: '#f8f9fa'
-                }}>
+                  background: '#f8f9fa',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onClick={() => {
+                  navigate(`/app/budgets/${budget.id}`);
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#e9ecef';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#f8f9fa';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+                >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div style={{ flex: 1 }}>
                       <h4 style={{ margin: '0 0 0.5rem 0', color: '#2c5aa0' }}>
@@ -771,7 +782,10 @@ const BudgetHub = () => {
                               autoFocus
                             />
                             <button
-                              onClick={() => handleSaveCustomLink(budget.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSaveCustomLink(budget.id);
+                              }}
                               disabled={isLoading}
                               style={{
                                 background: '#28a745',
@@ -786,7 +800,10 @@ const BudgetHub = () => {
                               ✅
                             </button>
                             <button
-                              onClick={cancelEditingLink}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                cancelEditingLink();
+                              }}
                               disabled={isLoading}
                               style={{
                                 background: '#dc3545',
@@ -809,7 +826,43 @@ const BudgetHub = () => {
                     
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/app/budgets/${budget.id}`);
+                        }}
+                        style={{
+                          background: '#1976d2',
+                          color: 'white',
+                          border: 'none',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '0.8rem',
+                          minWidth: '120px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.25rem',
+                          fontWeight: '500',
+                          transition: 'all 0.2s ease',
+                          position: 'relative',
+                          zIndex: 10
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = '#1565c0';
+                          e.target.style.transform = 'translateY(-1px)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = '#1976d2';
+                          e.target.style.transform = 'translateY(0)';
+                        }}
+                      >
+                        📄 Ver Detalhes
+                      </button>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setSelectedBudget(budget);
                           setFormData(budget.budget_request);
                           setActiveView('edit');
@@ -828,7 +881,10 @@ const BudgetHub = () => {
                       </button>
                       
                       <button
-                        onClick={() => handleCopyLink(budget.custom_link)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCopyLink(budget.custom_link);
+                        }}
                         style={{
                           background: '#28a745',
                           color: 'white',
@@ -843,7 +899,10 @@ const BudgetHub = () => {
                       </button>
                       
                       <button
-                        onClick={() => startEditingLink(budget.id, budget.custom_link)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startEditingLink(budget.id, budget.custom_link);
+                        }}
                         disabled={editingLink === budget.id || isLoading}
                         style={{
                           background: editingLink === budget.id ? '#6c757d' : '#17a2b8',
@@ -881,7 +940,10 @@ const BudgetHub = () => {
                       )}
                       
                       <button
-                        onClick={() => handleDeleteBudget(budget.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteBudget(budget.id);
+                        }}
                         style={{
                           background: '#dc3545',
                           color: 'white',
