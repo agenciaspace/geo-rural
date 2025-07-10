@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Backend Produção - OnGeo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Teste Backend Produção - OnGeo</h1>
+    <p><strong>Testando backend em:</strong> https://ongeo.up.railway.app</p>
+    
+    <button class="btn-primary" onclick="runAllTests()">🚀 Executar Todos os Testes</button>
+    
+    <div id="results"></div>
+    
+    <script>
+        const baseUrl = 'https://ongeo.up.railway.app';
+        const customLink = 'orcamento-1752096006845';
+        const resultsDiv = document.getElementById('results');
+        
+        function addResult(title, content, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test ${type}`;
+            div.innerHTML = `<h3>${title}</h3><pre>${JSON.stringify(content, null, 2)}</pre>`;
+            resultsDiv.appendChild(div);
+        }
+        
+        async function testBackendHealth() {
+            try {
+                console.log('Testando health check do backend...');
+                const response = await fetch(`${baseUrl}/api/info`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('✅ Teste 1: Backend Health Check', {
+                        status: response.status,
+                        data: data
+                    }, 'success');
+                    return true;
+                } else {
+                    addResult('❌ Teste 1: Backend Health Check', {
+                        status: response.status,
+                        statusText: response.statusText
+                    }, 'error');
+                    return false;
+                }
+            } catch (err) {
+                addResult('❌ Teste 1: Backend Health Check', {
+                    error: err.message
+                }, 'error');
+                return false;
+            }
+        }
+        
+        async function testBudgetEndpoint() {
+            try {
+                console.log('Testando endpoint de orçamento...');
+                const response = await fetch(`${baseUrl}/api/budgets/link/${customLink}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('✅ Teste 2: Endpoint de Orçamento', {
+                        status: response.status,
+                        data: data
+                    }, 'success');
+                    return true;
+                } else {
+                    addResult('❌ Teste 2: Endpoint de Orçamento', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        url: `${baseUrl}/api/budgets/link/${customLink}`
+                    }, 'error');
+                    return false;
+                }
+            } catch (err) {
+                addResult('❌ Teste 2: Endpoint de Orçamento', {
+                    error: err.message,
+                    url: `${baseUrl}/api/budgets/link/${customLink}`
+                }, 'error');
+                return false;
+            }
+        }
+        
+        async function testListBudgets() {
+            try {
+                console.log('Testando listagem de orçamentos...');
+                const response = await fetch(`${baseUrl}/api/budgets`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('✅ Teste 3: Listagem de Orçamentos', {
+                        status: response.status,
+                        budgetCount: data.length || data.budgets?.length || 'unknown',
+                        hasCustomLink: data.some ? data.some(b => b.custom_link === customLink) : 'unknown'
+                    }, 'success');
+                    return true;
+                } else {
+                    addResult('❌ Teste 3: Listagem de Orçamentos', {
+                        status: response.status,
+                        statusText: response.statusText
+                    }, 'error');
+                    return false;
+                }
+            } catch (err) {
+                addResult('❌ Teste 3: Listagem de Orçamentos', {
+                    error: err.message
+                }, 'error');
+                return false;
+            }
+        }
+        
+        async function testDocs() {
+            try {
+                console.log('Testando documentação da API...');
+                const response = await fetch(`${baseUrl}/docs`);
+                
+                if (response.ok) {
+                    addResult('✅ Teste 4: Documentação da API', {
+                        status: response.status,
+                        contentType: response.headers.get('content-type')
+                    }, 'success');
+                    return true;
+                } else {
+                    addResult('❌ Teste 4: Documentação da API', {
+                        status: response.status,
+                        statusText: response.statusText
+                    }, 'error');
+                    return false;
+                }
+            } catch (err) {
+                addResult('❌ Teste 4: Documentação da API', {
+                    error: err.message
+                }, 'error');
+                return false;
+            }
+        }
+        
+        async function testCors() {
+            try {
+                console.log('Testando CORS...');
+                const response = await fetch(`${baseUrl}/api/info`, {
+                    method: 'OPTIONS'
+                });
+                
+                addResult('ℹ️ Teste 5: CORS Headers', {
+                    status: response.status,
+                    corsHeaders: {
+                        'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                        'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                        'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers')
+                    }
+                }, 'info');
+                return true;
+            } catch (err) {
+                addResult('❌ Teste 5: CORS', {
+                    error: err.message
+                }, 'error');
+                return false;
+            }
+        }
+        
+        async function runAllTests() {
+            resultsDiv.innerHTML = '<div class="test info"><h3>🚀 Iniciando testes...</h3></div>';
+            
+            const tests = [
+                { name: 'Backend Health', fn: testBackendHealth },
+                { name: 'Budget Endpoint', fn: testBudgetEndpoint },
+                { name: 'List Budgets', fn: testListBudgets },
+                { name: 'API Docs', fn: testDocs },
+                { name: 'CORS', fn: testCors }
+            ];
+            
+            let passed = 0;
+            let total = tests.length;
+            
+            for (const test of tests) {
+                try {
+                    const result = await test.fn();
+                    if (result) passed++;
+                } catch (err) {
+                    console.error(`Erro no teste ${test.name}:`, err);
+                }
+                
+                // Pequena pausa entre testes
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            // Resumo final
+            const successRate = (passed / total * 100).toFixed(1);
+            addResult(`📊 Resumo Final: ${passed}/${total} testes passaram (${successRate}%)`, {
+                passed: passed,
+                total: total,
+                successRate: `${successRate}%`,
+                backendStatus: passed >= 3 ? 'FUNCIONAL' : 'PROBLEMAS DETECTADOS'
+            }, passed >= 3 ? 'success' : 'error');
+        }
+        
+        // Executar teste automático quando carregar
+        // window.onload = runAllTests;
+    </script>
+</body>
+</html>

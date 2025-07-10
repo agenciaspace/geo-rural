@@ -8,7 +8,8 @@ RUN npm run build
 
 # ---------- Stage 2: Build Python backend ----------
 FROM python:3.12-slim AS backend
-ENV PYTHONUNBUAFFERED=1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app
 
 # System build deps for numpy/scipy/georinex
@@ -26,5 +27,12 @@ COPY backend /app/backend
 # Copy built frontend static files
 COPY --from=frontend /app/build /app/build
 
+# Create directory for data
+RUN mkdir -p /app/backend/data
+
+# Set environment variables for production
+ENV SUPABASE_URL=${SUPABASE_URL}
+ENV SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+
 EXPOSE $PORT
-CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "cd /app && uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} --log-level info"]

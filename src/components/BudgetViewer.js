@@ -46,38 +46,32 @@ const BudgetViewer = ({ customLink }) => {
         return;
       }
       
-      console.log('🎯 Tentativa 2: Backend API');
-      try {
-        const response = await fetch(`/api/budgets/link/${customLink}`);
-        console.log('📊 Resposta Backend:', { 
-          status: response.status, 
-          statusText: response.statusText,
-          ok: response.ok 
-        });
-        
-        if (response.status === 404) {
-          console.log('❌ Backend: 404 - Orçamento não encontrado');
-          setError('Link não encontrado. Verifique se o endereço está correto.');
-          return;
+      console.log('🎯 Tentativa 2: Backend API (apenas em desenvolvimento)');
+      // Só tentar backend se estiver em desenvolvimento local
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        try {
+          const response = await fetch(`/api/budgets/link/${customLink}`);
+          console.log('📊 Resposta Backend:', { 
+            status: response.status, 
+            statusText: response.statusText,
+            ok: response.ok 
+          });
+          
+          if (response.ok) {
+            const backendData = await response.json();
+            console.log('📊 Dados do Backend:', backendData);
+            
+            if (backendData.success && backendData.budget) {
+              console.log('✅ Sucesso via Backend!');
+              setBudget(backendData.budget);
+              return;
+            }
+          }
+        } catch (backendErr) {
+          console.error('❌ Erro no Backend:', backendErr);
         }
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const backendData = await response.json();
-        console.log('📊 Dados do Backend:', backendData);
-        
-        if (backendData.success && backendData.budget) {
-          console.log('✅ Sucesso via Backend!');
-          setBudget(backendData.budget);
-          return;
-        } else {
-          console.log('❌ Backend: Dados inválidos');
-          throw new Error('Backend retornou dados inválidos');
-        }
-      } catch (backendErr) {
-        console.error('❌ Erro no Backend:', backendErr);
+      } else {
+        console.log('🏗️ Produção: Pulando backend, usando apenas Supabase');
       }
       
       console.log('🎯 Tentativa 3: Teste direto com ID conhecido');
