@@ -62,10 +62,10 @@ const BudgetDetails = () => {
 
   const getStatusBadge = (status) => {
     const styles = {
-      active: { bg: '#e3f2fd', color: '#1976d2', text: 'Ativo' },
-      approved: { bg: '#e8f5e9', color: '#388e3c', text: 'Aprovado' },
-      rejected: { bg: '#ffebee', color: '#d32f2f', text: 'Rejeitado' },
-      draft: { bg: '#f5f5f5', color: '#757575', text: 'Rascunho' }
+      active: { bg: '#f5f5f5', color: '#666', text: 'Ativo' },
+      approved: { bg: '#f9f9f9', color: '#333', text: 'Aprovado' },
+      rejected: { bg: '#f5f5f5', color: '#666', text: 'Rejeitado' },
+      draft: { bg: '#f5f5f5', color: '#666', text: 'Rascunho' }
     };
     
     const style = styles[status] || styles.draft;
@@ -75,9 +75,10 @@ const BudgetDetails = () => {
         background: style.bg,
         color: style.color,
         padding: '0.25rem 0.75rem',
-        borderRadius: '12px',
+        borderRadius: '4px',
         fontSize: '0.875rem',
-        fontWeight: '500'
+        fontWeight: '500',
+        border: '1px solid #ddd'
       }}>
         {style.text}
       </span>
@@ -200,7 +201,7 @@ const BudgetDetails = () => {
           <button
             onClick={handleViewPublicLink}
             style={{
-              background: '#1976d2',
+              background: '#333',
               color: 'white',
               border: 'none',
               padding: '0.5rem 1rem',
@@ -214,9 +215,9 @@ const BudgetDetails = () => {
           <button
             onClick={handleCopyLink}
             style={{
-              background: '#666',
-              color: 'white',
-              border: 'none',
+              background: 'transparent',
+              color: '#666',
+              border: '1px solid #ddd',
               padding: '0.5rem 1rem',
               borderRadius: '4px',
               cursor: 'pointer',
@@ -252,12 +253,13 @@ const BudgetDetails = () => {
               <div style={{
                 width: '40px',
                 height: '40px',
-                background: '#e3f2fd',
+                background: '#f5f5f5',
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                flexShrink: 0
+                flexShrink: 0,
+                border: '1px solid #ddd'
               }}>
                 📄
               </div>
@@ -280,17 +282,18 @@ const BudgetDetails = () => {
                 <div style={{
                   width: '40px',
                   height: '40px',
-                  background: '#e8f5e9',
+                  background: '#f9f9f9',
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  flexShrink: 0
+                  flexShrink: 0,
+                  border: '1px solid #ccc'
                 }}>
                   ✅
                 </div>
                 <div>
-                  <div style={{ fontWeight: '500', marginBottom: '0.25rem', color: '#388e3c' }}>
+                  <div style={{ fontWeight: '500', marginBottom: '0.25rem', color: '#333' }}>
                     Orçamento Aprovado
                   </div>
                   <div style={{ color: '#666', fontSize: '0.9rem' }}>
@@ -309,17 +312,18 @@ const BudgetDetails = () => {
                 <div style={{
                   width: '40px',
                   height: '40px',
-                  background: '#ffebee',
+                  background: '#f5f5f5',
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  flexShrink: 0
+                  flexShrink: 0,
+                  border: '1px solid #ddd'
                 }}>
                   ❌
                 </div>
                 <div>
-                  <div style={{ fontWeight: '500', marginBottom: '0.25rem', color: '#d32f2f' }}>
+                  <div style={{ fontWeight: '500', marginBottom: '0.25rem', color: '#666' }}>
                     Orçamento Rejeitado
                   </div>
                   <div style={{ color: '#666', fontSize: '0.9rem' }}>
@@ -331,7 +335,7 @@ const BudgetDetails = () => {
                       padding: '0.75rem',
                       background: '#fff',
                       borderRadius: '4px',
-                      border: '1px solid #ffcdd2',
+                      border: '1px solid #ddd',
                       fontSize: '0.9rem',
                       color: '#666'
                     }}>

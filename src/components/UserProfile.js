@@ -185,7 +185,7 @@ const UserProfile = () => {
         .page-title {
           font-size: 2rem;
           font-weight: bold;
-          color: #2c5aa0;
+          color: #333;
           margin-bottom: 0.5rem;
           display: flex;
           align-items: center;
@@ -217,12 +217,12 @@ const UserProfile = () => {
         }
 
         .tab-button:hover {
-          color: #2c5aa0;
+          color: #333;
           background: #f8f9fa;
         }
 
         .tab-button.active {
-          color: #2c5aa0;
+          color: #333;
           border-bottom-color: #2c5aa0;
           background: #f8f9fa;
         }
@@ -242,7 +242,7 @@ const UserProfile = () => {
         .section-title {
           font-size: 1.2rem;
           font-weight: 600;
-          color: #2c5aa0;
+          color: #333;
           margin-bottom: 1rem;
         }
 
@@ -308,7 +308,7 @@ const UserProfile = () => {
         .avatar-name {
           font-size: 1.2rem;
           font-weight: 600;
-          color: #2c5aa0;
+          color: #333;
           margin-bottom: 0.25rem;
         }
 

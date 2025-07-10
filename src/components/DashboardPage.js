@@ -51,11 +51,11 @@ const DashboardPage = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'approved': return '#28a745';
-      case 'rejected': return '#dc3545';
-      case 'active': return '#007bff';
-      case 'resubmitted': return '#ffc107';
-      default: return '#6c757d';
+      case 'approved': return '#666';
+      case 'rejected': return '#666';
+      case 'active': return '#333';
+      case 'resubmitted': return '#666';
+      default: return '#999';
     }
   };
 
@@ -267,7 +267,7 @@ const DashboardPage = () => {
         }
 
         .stat-card.primary {
-          background: linear-gradient(135deg, #28a745, #20c997);
+          background: #333;
           color: white;
         }
 
@@ -395,7 +395,7 @@ const DashboardPage = () => {
         .budget-value {
           font-size: 1.5rem;
           font-weight: bold;
-          color: #28a745;
+          color: #333;
           margin-bottom: 0.5rem;
         }
 
@@ -531,25 +531,25 @@ const DashboardPage = () => {
           <div className="stat-label">📈 Status dos Orçamentos</div>
           <div className="status-grid">
             <div className="status-item">
-              <div className="status-number" style={{color: '#007bff'}}>
+              <div className="status-number" style={{color: '#333'}}>
                 {analytics.activeCount}
               </div>
               <div className="status-label">Ativos</div>
             </div>
             <div className="status-item">
-              <div className="status-number" style={{color: '#28a745'}}>
+              <div className="status-number" style={{color: '#666'}}>
                 {analytics.approvedCount}
               </div>
               <div className="status-label">Aprovados</div>
             </div>
             <div className="status-item">
-              <div className="status-number" style={{color: '#dc3545'}}>
+              <div className="status-number" style={{color: '#666'}}>
                 {analytics.rejectedCount}
               </div>
               <div className="status-label">Rejeitados</div>
             </div>
             <div className="status-item">
-              <div className="status-number" style={{color: '#ffc107'}}>
+              <div className="status-number" style={{color: '#666'}}>
                 {analytics.resubmittedCount}
               </div>
               <div className="status-label">Reenviados</div>

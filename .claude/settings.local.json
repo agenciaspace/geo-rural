@@ -49,7 +49,8 @@
       "Bash(npm run:*)",
       "Bash(npm start)",
       "Bash(pkill:*)",
-      "Bash(true)"
+      "Bash(true)",
+      "Bash(npm test:*)"
     ],
     "deny": []
   }

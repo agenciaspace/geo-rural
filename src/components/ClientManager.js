@@ -288,13 +288,13 @@ const ClientManager = () => {
         <button
           onClick={() => setActiveView('list')}
           style={{
-            background: activeView === 'list' ? '#007bff' : 'transparent',
-            color: activeView === 'list' ? 'white' : '#007bff',
-            border: '2px solid #007bff',
+            background: activeView === 'list' ? '#333' : 'transparent',
+            color: activeView === 'list' ? 'white' : '#333',
+            border: '1px solid #333',
             padding: '0.5rem 1rem',
-            borderRadius: '6px',
+            borderRadius: '4px',
             cursor: 'pointer',
-            fontWeight: '600'
+            fontWeight: '500'
           }}
         >
           📋 Listar Clientes
@@ -306,13 +306,13 @@ const ClientManager = () => {
             setSelectedClient(null);
           }}
           style={{
-            background: activeView === 'create' ? '#28a745' : 'transparent',
-            color: activeView === 'create' ? 'white' : '#28a745',
-            border: '2px solid #28a745',
+            background: activeView === 'create' ? '#333' : 'transparent',
+            color: activeView === 'create' ? 'white' : '#333',
+            border: '1px solid #333',
             padding: '0.5rem 1rem',
-            borderRadius: '6px',
+            borderRadius: '4px',
             cursor: 'pointer',
-            fontWeight: '600'
+            fontWeight: '500'
           }}
         >
           ➕ Novo Cliente
@@ -322,11 +322,12 @@ const ClientManager = () => {
       {/* Messages */}
       {error && (
         <div style={{ 
-          background: '#f8d7da', 
-          color: '#721c24', 
+          background: '#f5f5f5', 
+          color: '#666', 
           padding: '1rem', 
-          borderRadius: '6px', 
-          marginBottom: '1rem' 
+          borderRadius: '4px', 
+          marginBottom: '1rem',
+          border: '1px solid #ddd'
         }}>
           ❌ {error}
         </div>
@@ -334,11 +335,12 @@ const ClientManager = () => {
 
       {success && (
         <div style={{ 
-          background: '#d4edda', 
-          color: '#155724', 
+          background: '#f9f9f9', 
+          color: '#333', 
           padding: '1rem', 
-          borderRadius: '6px', 
-          marginBottom: '1rem' 
+          borderRadius: '4px', 
+          marginBottom: '1rem',
+          border: '1px solid #ccc'
         }}>
           ✅ {success}
         </div>
@@ -402,7 +404,7 @@ const ClientManager = () => {
                         📅 Cadastrado em {formatDate(client.created_at)} • {formatClientType(client.client_type)}
                       </div>
                       {client.total_budgets > 0 && (
-                        <div style={{ fontSize: '0.8rem', color: '#28a745', marginTop: '0.5rem' }}>
+                        <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.5rem' }}>
                           💰 {client.total_budgets} orçamento(s) • Total: R$ {client.total_spent?.toFixed(2) || '0.00'}
                         </div>
                       )}
@@ -412,13 +414,22 @@ const ClientManager = () => {
                       <button
                         onClick={() => startEditClient(client)}
                         style={{
-                          background: '#ffc107',
-                          color: 'black',
-                          border: 'none',
+                          background: 'transparent',
+                          color: '#666',
+                          border: '1px solid #ddd',
                           padding: '0.5rem',
                           borderRadius: '4px',
                           cursor: 'pointer',
-                          fontSize: '0.8rem'
+                          fontSize: '0.8rem',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = '#f5f5f5';
+                          e.target.style.borderColor = '#bbb';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'transparent';
+                          e.target.style.borderColor = '#ddd';
                         }}
                       >
                         ✏️ Editar
@@ -427,13 +438,22 @@ const ClientManager = () => {
                       <button
                         onClick={() => handleDeleteClient(client.id)}
                         style={{
-                          background: '#dc3545',
-                          color: 'white',
-                          border: 'none',
+                          background: 'transparent',
+                          color: '#999',
+                          border: '1px solid #ddd',
                           padding: '0.5rem',
                           borderRadius: '4px',
                           cursor: 'pointer',
-                          fontSize: '0.8rem'
+                          fontSize: '0.8rem',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = '#f5f5f5';
+                          e.target.style.color = '#666';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'transparent';
+                          e.target.style.color = '#999';
                         }}
                       >
                         🗑️ Remover
@@ -637,14 +657,14 @@ const ClientManager = () => {
                 onClick={activeView === 'create' ? handleCreateClient : handleEditClient}
                 disabled={!isFormValid() || isLoading}
                 style={{
-                  background: activeView === 'create' ? '#28a745' : '#ffc107',
-                  color: activeView === 'create' ? 'white' : 'black',
+                  background: '#333',
+                  color: 'white',
                   border: 'none',
                   padding: '1rem 2rem',
-                  borderRadius: '6px',
+                  borderRadius: '4px',
                   cursor: isFormValid() && !isLoading ? 'pointer' : 'not-allowed',
                   fontSize: '1rem',
-                  fontWeight: '600',
+                  fontWeight: '500',
                   opacity: isFormValid() && !isLoading ? 1 : 0.6
                 }}
               >
@@ -655,13 +675,13 @@ const ClientManager = () => {
                 onClick={() => setActiveView('list')}
                 style={{
                   background: 'transparent',
-                  color: '#6c757d',
-                  border: '2px solid #6c757d',
+                  color: '#666',
+                  border: '1px solid #ddd',
                   padding: '1rem 2rem',
-                  borderRadius: '6px',
+                  borderRadius: '4px',
                   cursor: 'pointer',
                   fontSize: '1rem',
-                  fontWeight: '600'
+                  fontWeight: '500'
                 }}
               >
                 ❌ Cancelar

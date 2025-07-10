@@ -641,13 +641,13 @@ const BudgetHub = () => {
         <button
           onClick={() => setActiveView('list')}
           style={{
-            background: activeView === 'list' ? '#007bff' : 'transparent',
-            color: activeView === 'list' ? 'white' : '#007bff',
-            border: '2px solid #007bff',
+            background: activeView === 'list' ? '#333' : 'transparent',
+            color: activeView === 'list' ? 'white' : '#333',
+            border: '1px solid #333',
             padding: '0.5rem 1rem',
-            borderRadius: '6px',
+            borderRadius: '4px',
             cursor: 'pointer',
-            fontWeight: '600'
+            fontWeight: '500'
           }}
         >
           📋 Listar Orçamentos
@@ -659,13 +659,13 @@ const BudgetHub = () => {
             setSelectedBudget(null);
           }}
           style={{
-            background: activeView === 'create' ? '#28a745' : 'transparent',
-            color: activeView === 'create' ? 'white' : '#28a745',
-            border: '2px solid #28a745',
+            background: activeView === 'create' ? '#333' : 'transparent',
+            color: activeView === 'create' ? 'white' : '#333',
+            border: '1px solid #333',
             padding: '0.5rem 1rem',
-            borderRadius: '6px',
+            borderRadius: '4px',
             cursor: 'pointer',
-            fontWeight: '600'
+            fontWeight: '500'
           }}
         >
           ➕ Criar Orçamento
@@ -675,11 +675,12 @@ const BudgetHub = () => {
       {/* Messages */}
       {error && (
         <div style={{ 
-          background: '#f8d7da', 
-          color: '#721c24', 
+          background: '#f5f5f5', 
+          color: '#666', 
           padding: '1rem', 
-          borderRadius: '6px', 
-          marginBottom: '1rem' 
+          borderRadius: '4px', 
+          marginBottom: '1rem',
+          border: '1px solid #ddd'
         }}>
           ❌ {error}
         </div>
@@ -687,11 +688,12 @@ const BudgetHub = () => {
 
       {success && (
         <div style={{ 
-          background: '#d4edda', 
-          color: '#155724', 
+          background: '#f9f9f9', 
+          color: '#333', 
           padding: '1rem', 
-          borderRadius: '6px', 
-          marginBottom: '1rem' 
+          borderRadius: '4px', 
+          marginBottom: '1rem',
+          border: '1px solid #ccc'
         }}>
           ✅ {success}
         </div>
@@ -788,7 +790,7 @@ const BudgetHub = () => {
                               }}
                               disabled={isLoading}
                               style={{
-                                background: '#28a745',
+                                background: '#333',
                                 color: 'white',
                                 border: 'none',
                                 padding: '0.25rem 0.5rem',
@@ -806,9 +808,9 @@ const BudgetHub = () => {
                               }}
                               disabled={isLoading}
                               style={{
-                                background: '#dc3545',
-                                color: 'white',
-                                border: 'none',
+                                background: 'transparent',
+                                color: '#666',
+                                border: '1px solid #ddd',
                                 padding: '0.25rem 0.5rem',
                                 borderRadius: '4px',
                                 fontSize: '0.7rem',
@@ -831,7 +833,7 @@ const BudgetHub = () => {
                           navigate(`/app/budgets/${budget.id}`);
                         }}
                         style={{
-                          background: '#1976d2',
+                          background: '#333',
                           color: 'white',
                           border: 'none',
                           padding: '0.5rem 1rem',
@@ -839,22 +841,13 @@ const BudgetHub = () => {
                           cursor: 'pointer',
                           fontSize: '0.8rem',
                           minWidth: '120px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '0.25rem',
-                          fontWeight: '500',
-                          transition: 'all 0.2s ease',
-                          position: 'relative',
-                          zIndex: 10
+                          transition: 'background 0.2s ease'
                         }}
                         onMouseEnter={(e) => {
-                          e.target.style.background = '#1565c0';
-                          e.target.style.transform = 'translateY(-1px)';
+                          e.target.style.background = '#555';
                         }}
                         onMouseLeave={(e) => {
-                          e.target.style.background = '#1976d2';
-                          e.target.style.transform = 'translateY(0)';
+                          e.target.style.background = '#333';
                         }}
                       >
                         📄 Ver Detalhes
@@ -868,13 +861,22 @@ const BudgetHub = () => {
                           setActiveView('edit');
                         }}
                         style={{
-                          background: '#ffc107',
-                          color: 'black',
-                          border: 'none',
+                          background: 'transparent',
+                          color: '#666',
+                          border: '1px solid #ddd',
                           padding: '0.5rem',
                           borderRadius: '4px',
                           cursor: 'pointer',
-                          fontSize: '0.8rem'
+                          fontSize: '0.8rem',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = '#f5f5f5';
+                          e.target.style.borderColor = '#bbb';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'transparent';
+                          e.target.style.borderColor = '#ddd';
                         }}
                       >
                         ✏️ Editar
@@ -886,13 +888,22 @@ const BudgetHub = () => {
                           handleCopyLink(budget.custom_link);
                         }}
                         style={{
-                          background: '#28a745',
-                          color: 'white',
-                          border: 'none',
+                          background: 'transparent',
+                          color: '#666',
+                          border: '1px solid #ddd',
                           padding: '0.5rem',
                           borderRadius: '4px',
                           cursor: 'pointer',
-                          fontSize: '0.8rem'
+                          fontSize: '0.8rem',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = '#f5f5f5';
+                          e.target.style.borderColor = '#bbb';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'transparent';
+                          e.target.style.borderColor = '#ddd';
                         }}
                       >
                         📋 Copiar
@@ -905,9 +916,9 @@ const BudgetHub = () => {
                         }}
                         disabled={editingLink === budget.id || isLoading}
                         style={{
-                          background: editingLink === budget.id ? '#6c757d' : '#17a2b8',
-                          color: 'white',
-                          border: 'none',
+                          background: 'transparent',
+                          color: '#666',
+                          border: '1px solid #ddd',
                           padding: '0.5rem',
                           borderRadius: '4px',
                           cursor: (editingLink === budget.id || isLoading) ? 'not-allowed' : 'pointer',
@@ -926,9 +937,9 @@ const BudgetHub = () => {
                             setActiveView('resubmit');
                           }}
                           style={{
-                            background: '#fd7e14',
-                            color: 'white',
-                            border: 'none',
+                            background: 'transparent',
+                            color: '#666',
+                            border: '1px solid #ddd',
                             padding: '0.5rem',
                             borderRadius: '4px',
                             cursor: 'pointer',
@@ -945,13 +956,22 @@ const BudgetHub = () => {
                           handleDeleteBudget(budget.id);
                         }}
                         style={{
-                          background: '#dc3545',
-                          color: 'white',
-                          border: 'none',
+                          background: 'transparent',
+                          color: '#999',
+                          border: '1px solid #ddd',
                           padding: '0.5rem',
                           borderRadius: '4px',
                           cursor: 'pointer',
-                          fontSize: '0.8rem'
+                          fontSize: '0.8rem',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = '#f5f5f5';
+                          e.target.style.color = '#666';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'transparent';
+                          e.target.style.color = '#999';
                         }}
                       >
                         🗑️ Excluir
@@ -976,16 +996,16 @@ const BudgetHub = () => {
           
           {activeView === 'resubmit' && (
             <div style={{
-              background: '#fff3cd',
-              border: '1px solid #ffeaa7',
-              borderRadius: '6px',
+              background: '#f9f9f9',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
               padding: '1rem',
               marginBottom: '1.5rem'
             }}>
-              <div style={{ fontWeight: 'bold', color: '#856404', marginBottom: '0.5rem' }}>
+              <div style={{ fontWeight: 'bold', color: '#666', marginBottom: '0.5rem' }}>
                 📋 Reenvio de Orçamento
               </div>
-              <div style={{ fontSize: '0.9rem', color: '#856404' }}>
+              <div style={{ fontSize: '0.9rem', color: '#666' }}>
                 Você está reenviando um orçamento rejeitado. Faça os ajustes necessários nos dados abaixo 
                 e clique em "Reenviar Orçamento" para submeter uma nova versão ao cliente.
               </div>
@@ -993,10 +1013,10 @@ const BudgetHub = () => {
                 <div style={{
                   marginTop: '0.5rem',
                   padding: '0.5rem',
-                  background: '#f8d7da',
+                  background: '#f5f5f5',
                   borderRadius: '4px',
                   fontSize: '0.8rem',
-                  color: '#721c24'
+                  color: '#666'
                 }}>
                   <strong>Motivo da rejeição anterior:</strong> "{selectedBudget.rejection_comment}"
                 </div>
@@ -1009,10 +1029,10 @@ const BudgetHub = () => {
             
             {/* Client Selection Type */}
             <div style={{ 
-              background: '#f8f9fa', 
+              background: '#fafafa', 
               padding: '1rem', 
-              borderRadius: '6px',
-              border: '1px solid #e9ecef'
+              borderRadius: '4px',
+              border: '1px solid #e0e0e0'
             }}>
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
@@ -1067,11 +1087,12 @@ const BudgetHub = () => {
                   
                   {selectedClient && (
                     <div style={{ 
-                      background: '#e7f3ff', 
+                      background: '#f5f5f5', 
                       padding: '0.75rem', 
                       borderRadius: '4px',
                       fontSize: '0.9rem',
-                      marginBottom: '0.5rem'
+                      marginBottom: '0.5rem',
+                      border: '1px solid #ddd'
                     }}>
                       <strong>Cliente selecionado:</strong><br/>
                       📧 {selectedClient.email}<br/>
@@ -1084,7 +1105,7 @@ const BudgetHub = () => {
                     type="button"
                     onClick={() => setShowClientForm(true)}
                     style={{
-                      background: '#28a745',
+                      background: '#333',
                       color: 'white',
                       border: 'none',
                       padding: '0.5rem 1rem',
@@ -1246,11 +1267,11 @@ const BudgetHub = () => {
                       onClick={handleCreateNewClient}
                       disabled={!isNewClientFormValid() || isLoading}
                       style={{
-                        background: '#28a745',
+                        background: '#333',
                         color: 'white',
                         border: 'none',
                         padding: '0.75rem 1.5rem',
-                        borderRadius: '6px',
+                        borderRadius: '4px',
                         cursor: isNewClientFormValid() && !isLoading ? 'pointer' : 'not-allowed',
                         opacity: isNewClientFormValid() && !isLoading ? 1 : 0.6
                       }}
@@ -1401,17 +1422,14 @@ const BudgetHub = () => {
                 }
                 disabled={!isFormValid() || isLoading}
                 style={{
-                  background: 
-                    activeView === 'create' ? '#28a745' :
-                    activeView === 'edit' ? '#ffc107' :
-                    '#fd7e14',
-                  color: activeView === 'edit' ? 'black' : 'white',
+                  background: '#333',
+                  color: 'white',
                   border: 'none',
                   padding: '1rem 2rem',
-                  borderRadius: '6px',
+                  borderRadius: '4px',
                   cursor: isFormValid() && !isLoading ? 'pointer' : 'not-allowed',
                   fontSize: '1rem',
-                  fontWeight: '600',
+                  fontWeight: '500',
                   opacity: isFormValid() && !isLoading ? 1 : 0.6
                 }}
               >
@@ -1425,10 +1443,10 @@ const BudgetHub = () => {
                 onClick={() => setActiveView('list')}
                 style={{
                   background: 'transparent',
-                  color: '#6c757d',
-                  border: '2px solid #6c757d',
+                  color: '#666',
+                  border: '1px solid #ddd',
                   padding: '1rem 2rem',
-                  borderRadius: '6px',
+                  borderRadius: '4px',
                   cursor: 'pointer',
                   fontSize: '1rem',
                   fontWeight: '600'

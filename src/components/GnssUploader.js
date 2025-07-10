@@ -246,10 +246,10 @@ const GnssUploader = () => {
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
         <h2 style={{ margin: 0 }}>🤖 Análise GNSS com IA</h2>
         <div style={{ 
-          background: 'linear-gradient(135deg, #2c5aa0, #1e7e34)', 
+          background: '#333', 
           color: 'white', 
           padding: '0.25rem 0.75rem', 
-          borderRadius: '12px', 
+          borderRadius: '4px', 
           fontSize: '0.8rem',
           fontWeight: 'bold'
         }}>
@@ -275,28 +275,28 @@ const GnssUploader = () => {
             textAlign: 'center',
             cursor: 'pointer',
             transition: 'all 0.3s ease',
-            background: dragOver ? '#f0f8ff' : '#fafafa'
+            background: dragOver ? '#f5f5f5' : '#fafafa'
           }}
         >
           <div>
             <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📡</div>
-            <h3 style={{ color: '#2c5aa0', marginBottom: '1rem' }}>
+            <h3 style={{ color: '#333', marginBottom: '1rem' }}>
               Arraste arquivos GNSS ou clique para selecionar
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.5rem', marginBottom: '1rem' }}>
-              <span style={{ background: '#e8f4fd', color: '#2c5aa0', padding: '0.5rem', borderRadius: '6px', fontSize: '0.9rem' }}>
+              <span style={{ background: '#f5f5f5', color: '#666', padding: '0.5rem', borderRadius: '4px', fontSize: '0.9rem', border: '1px solid #ddd' }}>
                 .21O
               </span>
-              <span style={{ background: '#e8f4fd', color: '#2c5aa0', padding: '0.5rem', borderRadius: '6px', fontSize: '0.9rem' }}>
+              <span style={{ background: '#f5f5f5', color: '#666', padding: '0.5rem', borderRadius: '4px', fontSize: '0.9rem', border: '1px solid #ddd' }}>
                 .RNX
               </span>
-              <span style={{ background: '#e8f4fd', color: '#2c5aa0', padding: '0.5rem', borderRadius: '6px', fontSize: '0.9rem' }}>
+              <span style={{ background: '#f5f5f5', color: '#666', padding: '0.5rem', borderRadius: '4px', fontSize: '0.9rem', border: '1px solid #ddd' }}>
                 .OBS
               </span>
-              <span style={{ background: '#e8f4fd', color: '#2c5aa0', padding: '0.5rem', borderRadius: '6px', fontSize: '0.9rem' }}>
+              <span style={{ background: '#f5f5f5', color: '#666', padding: '0.5rem', borderRadius: '4px', fontSize: '0.9rem', border: '1px solid #ddd' }}>
                 .NAV
               </span>
-              <span style={{ background: '#e8f4fd', color: '#2c5aa0', padding: '0.5rem', borderRadius: '6px', fontSize: '0.9rem' }}>
+              <span style={{ background: '#f5f5f5', color: '#666', padding: '0.5rem', borderRadius: '4px', fontSize: '0.9rem', border: '1px solid #ddd' }}>
                 .ZIP
               </span>
             </div>
@@ -317,14 +317,14 @@ const GnssUploader = () => {
       {file && !result && (
         <div>
           <div style={{ 
-            background: 'linear-gradient(135deg, #f8f9fa, #e9ecef)', 
+            background: '#f5f5f5', 
             padding: '2rem', 
             borderRadius: '12px', 
             marginBottom: '2rem',
             textAlign: 'center'
           }}>
             <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📄</div>
-            <h3 style={{ margin: '0 0 0.5rem 0', color: '#2c3e50' }}>{file.name}</h3>
+            <h3 style={{ margin: '0 0 0.5rem 0', color: '#333' }}>{file.name}</h3>
             <p style={{ margin: 0, color: '#666' }}>
               Tamanho: {(file.size / 1024 / 1024).toFixed(2)} MB
             </p>
@@ -333,11 +333,11 @@ const GnssUploader = () => {
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
             <button 
               style={{
-                background: 'linear-gradient(135deg, #2c5aa0, #1e7e34)',
+                background: '#333',
                 color: 'white',
                 border: 'none',
                 padding: '1rem 2rem',
-                borderRadius: '8px',
+                borderRadius: '4px',
                 fontSize: '1rem',
                 fontWeight: '600',
                 cursor: 'pointer',
@@ -350,13 +350,13 @@ const GnssUploader = () => {
             </button>
             <button 
               style={{
-                background: '#f8f9fa',
-                color: '#6c757d',
-                border: '2px solid #dee2e6',
+                background: 'transparent',
+                color: '#666',
+                border: '1px solid #ddd',
                 padding: '1rem 2rem',
-                borderRadius: '8px',
+                borderRadius: '4px',
                 fontSize: '1rem',
-                fontWeight: '600',
+                fontWeight: '500',
                 cursor: 'pointer'
               }}
               onClick={resetUpload}
@@ -397,11 +397,11 @@ const GnssUploader = () => {
 
       {error && (
         <div style={{ 
-          background: '#f8d7da', 
-          color: '#721c24', 
+          background: '#f5f5f5', 
+          color: '#666', 
           padding: '1rem', 
-          borderRadius: '8px',
-          border: '1px solid #f5c6cb'
+          borderRadius: '4px',
+          border: '1px solid #ddd'
         }}>
           <strong>❌ Erro:</strong> {error}
         </div>
@@ -411,17 +411,18 @@ const GnssUploader = () => {
         <div>
           {/* Header do Resultado */}
           <div style={{ 
-            background: 'linear-gradient(135deg, #d4edda, #c3e6cb)', 
+            background: '#f9f9f9', 
             padding: '2rem', 
-            borderRadius: '12px',
+            borderRadius: '4px',
             textAlign: 'center',
-            marginBottom: '2rem'
+            marginBottom: '2rem',
+            border: '1px solid #ccc'
           }}>
             <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
-            <h2 style={{ margin: '0 0 0.5rem 0', color: '#155724' }}>
+            <h2 style={{ margin: '0 0 0.5rem 0', color: '#333' }}>
               Análise RINEX Concluída!
             </h2>
-            <p style={{ margin: 0, color: '#155724' }}>
+            <p style={{ margin: 0, color: '#666' }}>
               Arquivo processado com GeorINEX • Dados reais extraídos
             </p>
           </div>
