@@ -5,7 +5,7 @@ import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { useAuth } from '../hooks/useAuth';
 
-const LoginPage = ({ onLoginSuccess, onBackToLanding }) => {
+const LoginPage = ({ onLoginSuccess, onBackToLanding, onEmailConfirmationRequired }) => {
   const { signIn, signUp } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
@@ -35,11 +35,30 @@ const LoginPage = ({ onLoginSuccess, onBackToLanding }) => {
         const { data, error } = await signUp(formData.email, formData.password, {
           name: formData.name
         });
+        
+        console.log('🔥 LoginPage signUp result:', { data, error });
+        console.log('🔥 data?.user:', data?.user);
+        console.log('🔥 data?.session:', data?.session);
+        console.log('🔥 data?.user?.email_confirmed_at:', data?.user?.email_confirmed_at);
+        
         if (error) throw error;
-        if (data.user) {
-          onLoginSuccess(data.user);
+        
+        // Se usuário foi criado, sempre redirecionar para confirmação de email
+        if (data?.user) {
+          console.log('🔥 LoginPage: Redirecionando para confirmação de email:', formData.email);
+          console.log('🔥 onEmailConfirmationRequired:', onEmailConfirmationRequired);
+          console.log('🔥 typeof onEmailConfirmationRequired:', typeof onEmailConfirmationRequired);
+          
+          if (onEmailConfirmationRequired) {
+            console.log('🔥 Chamando onEmailConfirmationRequired...');
+            onEmailConfirmationRequired(formData.email);
+            console.log('🔥 onEmailConfirmationRequired chamado com sucesso');
+          } else {
+            console.error('🔥 onEmailConfirmationRequired não está definido!');
+          }
         } else {
-          setError('Verifique seu email para confirmar a conta');
+          console.log('🔥 LoginPage: Nenhum usuário retornado, data:', data);
+          setError('Erro ao criar conta');
         }
       }
     } catch (error) {

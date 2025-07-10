@@ -4,8 +4,9 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { auth } from '../config/supabase';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from './ui/dialog';
 
-const Login = ({ onLoginSuccess, onBackToLanding }) => {
+const Login = ({ onLoginSuccess, onBackToLanding, onEmailConfirmationRequired }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
@@ -14,6 +15,8 @@ const Login = ({ onLoginSuccess, onBackToLanding }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,10 +33,12 @@ const Login = ({ onLoginSuccess, onBackToLanding }) => {
           name: formData.name
         });
         if (error) throw error;
+
+        // Se usuário foi criado, sempre redirecionar para confirmação de email
+        // (mesmo que email confirmations estejam desabilitadas, para consistência)
         if (data.user) {
-          onLoginSuccess(data.user);
-        } else {
-          setError('Verifique seu email para confirmar a conta');
+          onEmailConfirmationRequired(formData.email);
+          return;
         }
       }
     } catch (error) {
@@ -49,6 +54,33 @@ const Login = ({ onLoginSuccess, onBackToLanding }) => {
       [e.target.name]: e.target.value
     });
   };
+
+  const confirmModal = (
+    <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Confirme seu email</DialogTitle>
+          <DialogDescription>
+            Enviamos um link de confirmação para <strong>{pendingEmail}</strong>.<br/>
+            Clique no link para ativar sua conta.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col space-y-4 mt-4">
+          <Button
+            type="button"
+            onClick={async () => {
+              await auth.resendConfirmation(pendingEmail);
+              alert('Novo email de confirmação enviado!');
+            }}
+          >Reenviar email</Button>
+          <Button
+            variant="secondary"
+            onClick={() => setShowConfirmModal(false)}
+          >Fechar</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
@@ -143,6 +175,7 @@ const Login = ({ onLoginSuccess, onBackToLanding }) => {
           </CardContent>
         </Card>
       </div>
+      {confirmModal}
     </div>
   );
 };

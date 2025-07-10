@@ -20,19 +20,18 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
 
   useEffect(() => {
-    // Obter usuário atual
+    // Obter sessão atual
     const getSession = async () => {
-      try {
-        const { data: { user } } = await auth.getUser();
+      const { data: { user } } = await auth.getUser();
+      // Só setar usuário se email estiver confirmado
+      if (user && user.email_confirmed_at) {
         setUser(user);
-        setSession(user ? { user } : null);
-      } catch (error) {
-        console.error('Erro ao obter sessão:', error);
+        setSession({ user });
+      } else {
         setUser(null);
         setSession(null);
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     };
 
     getSession();
@@ -40,9 +39,24 @@ export const AuthProvider = ({ children }) => {
     // Escutar mudanças de autenticação
     const { data: { subscription } } = auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session);
-        setSession(session);
-        setUser(session?.user ?? null);
+        console.log('🔥 useAuth: onAuthStateChange event:', event);
+        console.log('🔥 useAuth: session:', session);
+        console.log('🔥 useAuth: session?.user?.email_confirmed_at:', session?.user?.email_confirmed_at);
+        
+        // Só setar usuário se email estiver confirmado ou se for logout
+        if (event === 'SIGNED_OUT' || !session) {
+          setSession(null);
+          setUser(null);
+        } else if (session?.user?.email_confirmed_at) {
+          // Email confirmado - usuário pode ser autenticado
+          setSession(session);
+          setUser(session.user);
+        } else {
+          // Email não confirmado - não autenticar
+          console.log('🔥 useAuth: Email não confirmado, não autenticando');
+          setSession(null);
+          setUser(null);
+        }
         setLoading(false);
       }
     );
@@ -57,12 +71,6 @@ export const AuthProvider = ({ children }) => {
       const { data, error } = await auth.signIn(email, password);
       
       if (error) throw error;
-      
-      // Atualizar o estado do usuário se o login foi bem-sucedido
-      if (data?.user) {
-        setUser(data.user);
-        setSession(data.session);
-      }
       
       return { data, error: null };
     } catch (error) {
@@ -79,12 +87,6 @@ export const AuthProvider = ({ children }) => {
       const { data, error } = await auth.signUp(email, password, metadata);
       
       if (error) throw error;
-      
-      // Atualizar o estado do usuário se o cadastro foi bem-sucedido
-      if (data?.user) {
-        setUser(data.user);
-        setSession(data.session);
-      }
       
       return { data, error: null };
     } catch (error) {
@@ -104,6 +106,7 @@ export const AuthProvider = ({ children }) => {
       
       setUser(null);
       setSession(null);
+      
       return { error: null };
     } catch (error) {
       return { error };
@@ -116,14 +119,19 @@ export const AuthProvider = ({ children }) => {
   const updateProfile = async (profileData) => {
     try {
       setLoading(true);
-      const { data, error } = await auth.updateProfile(profileData);
+      // Passar o usuário do contexto como fallback
+      const { data, error } = await auth.updateProfile(profileData, user);
       
       if (error) throw error;
       
       // Refresh user data
-      const { data: { user: updatedUser } } = await auth.getUser();
-      setUser(updatedUser);
-      setSession(updatedUser ? { user: updatedUser } : null);
+      try {
+        const { data: { user: updatedUser } } = await auth.getUser();
+        setUser(updatedUser);
+        setSession(updatedUser ? { user: updatedUser } : null);
+      } catch (refreshError) {
+        console.log('Erro ao atualizar dados do usuário, mantendo usuário atual');
+      }
       
       return { data, error: null };
     } catch (error) {
@@ -164,6 +172,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
+
 
   // Função para reenviar email de confirmação
   const resendConfirmation = async (email) => {

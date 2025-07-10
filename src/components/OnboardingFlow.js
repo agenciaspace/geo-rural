@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 
 const OnboardingFlow = ({ onComplete }) => {
-  const { user, updateProfile } = useAuth();
+  const authContext = useAuth();
+  const { user, updateProfile } = authContext;
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -45,15 +46,21 @@ const OnboardingFlow = ({ onComplete }) => {
     setIsLoading(true);
     setError('');
 
+    console.log('OnboardingFlow - User:', user);
+    console.log('OnboardingFlow - FormData:', formData);
+
     try {
       const { error } = await updateProfile(formData);
       
       if (error) {
+        console.error('OnboardingFlow - Erro:', error);
         setError('Erro ao salvar informações: ' + error.message);
       } else {
+        console.log('🔥 OnboardingFlow: Sucesso! Versão simplificada');
         onComplete();
       }
     } catch (err) {
+      console.error('OnboardingFlow - Erro inesperado:', err);
       setError('Erro inesperado ao salvar informações');
     } finally {
       setIsLoading(false);

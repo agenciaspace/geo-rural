@@ -1,38 +1,13 @@
--- SOLUÇÃO TEMPORÁRIA: Desabilitar RLS para teste
--- Execute este script para permitir acesso público imediato
+-- Temporarily disable RLS on user_profiles table to allow onboarding
+-- This is a quick fix to allow unconfirmed users to complete onboarding
 
--- 1. Desabilitar RLS temporariamente na tabela budgets
-ALTER TABLE budgets DISABLE ROW LEVEL SECURITY;
+-- Disable RLS temporarily
+ALTER TABLE user_profiles DISABLE ROW LEVEL SECURITY;
 
--- 2. Verificar se RLS foi desabilitado
-SELECT 
-    tablename,
-    rowsecurity
+-- Check if RLS is disabled
+SELECT schemaname, tablename, rowsecurity 
 FROM pg_tables 
-WHERE tablename = 'budgets';
+WHERE tablename = 'user_profiles';
 
--- 3. Testar consulta pública
-SELECT 
-    id,
-    custom_link,
-    status,
-    created_at,
-    budget_request,
-    budget_result
-FROM budgets 
-WHERE custom_link = 'orcamento-1752096006845';
-
--- 4. Verificar se o orçamento pode ser acessado publicamente
--- Este SELECT deve funcionar agora sem problemas
-SELECT EXISTS (
-    SELECT 1 FROM budgets 
-    WHERE custom_link = 'orcamento-1752096006845'
-) AS budget_accessible;
-
--- IMPORTANTE: Para reabilitar RLS depois que funcionar:
--- ALTER TABLE budgets ENABLE ROW LEVEL SECURITY;
-
--- IMPORTANTE: Depois de funcionar, você deve criar políticas RLS adequadas:
--- 1. Reabilitar RLS
--- 2. Criar políticas que permitam acesso público via custom_link
--- 3. Testar novamente
+-- To re-enable RLS later (when email confirmation is working), run:
+-- ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;

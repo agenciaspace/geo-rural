@@ -5,8 +5,10 @@ import LoginPage from './components/LoginPage';
 import BudgetViewer from './components/BudgetViewer';
 import DashboardLayout from './components/DashboardLayout';
 import OnboardingFlow from './components/OnboardingFlow';
+import AuthDebug from './components/AuthDebug';
 import { AuthProvider } from './hooks/useAuth';
 import './styles/dashboard.css';
+import EmailConfirmationPage from './components/EmailConfirmationPage';
 
 // Componente para visualização pública de orçamento
 const PublicBudgetViewer = () => {
@@ -20,12 +22,46 @@ const MainApp = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState('');
+  const [isSigningUp, setIsSigningUp] = useState(false);
+
+  // Log sempre que currentView mudar
+  React.useEffect(() => {
+    console.log('🔥 App: currentView mudou para:', currentView);
+  }, [currentView]);
 
   const handleAccessApp = () => {
     setCurrentView('login');
   };
 
+  const handleEmailConfirmationRequired = (email) => {
+    console.log('🔥 App: handleEmailConfirmationRequired chamado com email:', email);
+    setIsSigningUp(true);
+    setPendingConfirmationEmail(email);
+    setCurrentView('email-confirmation');
+  };
+
+  const handleConfirmationSuccess = () => {
+    setIsSigningUp(false);
+    setCurrentView('login');
+    setPendingConfirmationEmail('');
+  };
+
+  const handleBackToLoginFromConfirmation = () => {
+    setIsSigningUp(false);
+    setCurrentView('login');
+    setPendingConfirmationEmail('');
+  };
+
   const handleLoginSuccess = async (userData) => {
+    console.log('🔥 App: handleLoginSuccess chamado, isSigningUp:', isSigningUp);
+    
+    // Se estamos em processo de signup, não fazer nada
+    if (isSigningUp) {
+      console.log('🔥 App: Ignorando handleLoginSuccess durante signup');
+      return;
+    }
+    
     setCurrentUser(userData);
     
     // Buscar dados do perfil do usuário
@@ -44,6 +80,7 @@ const MainApp = () => {
   };
 
   const handleOnboardingComplete = () => {
+    console.log('🔥 App: handleOnboardingComplete chamado - nova versão');
     setShowOnboarding(false);
     setCurrentView('app');
   };
@@ -70,6 +107,15 @@ const MainApp = () => {
         <LoginPage 
           onLoginSuccess={handleLoginSuccess}
           onBackToLanding={handleBackToLanding}
+          onEmailConfirmationRequired={handleEmailConfirmationRequired}
+        />
+      )}
+
+      {currentView === 'email-confirmation' && (
+        <EmailConfirmationPage
+          email={pendingConfirmationEmail}
+          onBackToLogin={handleBackToLoginFromConfirmation}
+          onConfirmationSuccess={handleConfirmationSuccess}
         />
       )}
 
@@ -82,6 +128,8 @@ const MainApp = () => {
       {currentView === 'app' && (
         <DashboardLayout onLogout={handleLogout} />
       )}
+      
+      <AuthDebug />
     </AuthProvider>
   );
 };

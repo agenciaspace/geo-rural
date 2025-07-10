@@ -1,256 +1,132 @@
 import React, { useState, useEffect } from 'react';
+import { X, Mail, Clock, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
-const EmailConfirmationModal = () => {
-  const { user, resendConfirmation } = useAuth();
-  const [isVisible, setIsVisible] = useState(false);
-  const [isDismissed, setIsDismissed] = useState(false);
+const EmailConfirmationModal = ({ user, onClose, onResendEmail }) => {
   const [isResending, setIsResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+  const [daysRemaining, setDaysRemaining] = useState(7);
 
   useEffect(() => {
-    // Verificar se o usuário existe e se o email não foi confirmado
-    // Funciona tanto com Supabase real quanto modo demo
-    if (user && !user.email_confirmed_at && !isDismissed) {
-      setIsVisible(true);
-    } else {
-      setIsVisible(false);
+    if (user?.created_at) {
+      const createdDate = new Date(user.created_at);
+      const now = new Date();
+      const daysPassed = Math.floor((now - createdDate) / (1000 * 60 * 60 * 24));
+      const remaining = Math.max(0, 7 - daysPassed);
+      setDaysRemaining(remaining);
     }
-  }, [user, isDismissed]);
-
-  const handleDismiss = () => {
-    setIsDismissed(true);
-    setIsVisible(false);
-  };
+  }, [user]);
 
   const handleResendEmail = async () => {
-    if (!user?.email) return;
-    
     setIsResending(true);
     try {
-      const { error } = await resendConfirmation(user.email);
-      
-      if (error) {
-        alert('Erro ao reenviar email: ' + error.message);
-      } else {
-        alert('Email de confirmação reenviado! Verifique sua caixa de entrada.');
-      }
+      await onResendEmail(user.email);
+      setResendSuccess(true);
+      setTimeout(() => setResendSuccess(false), 3000);
     } catch (error) {
-      alert('Erro inesperado ao reenviar email');
+      console.error('Erro ao reenviar email:', error);
     } finally {
       setIsResending(false);
     }
   };
 
-  if (!isVisible) return null;
+  const getStatusColor = () => {
+    if (daysRemaining <= 1) return 'text-red-600';
+    if (daysRemaining <= 3) return 'text-orange-600';
+    return 'text-yellow-600';
+  };
+
+  const getStatusIcon = () => {
+    if (daysRemaining <= 1) return <AlertTriangle className="w-5 h-5 text-red-600" />;
+    return <Clock className="w-5 h-5 text-yellow-600" />;
+  };
 
   return (
-    <div className="email-confirmation-modal">
-      <style jsx>{`
-        .email-confirmation-modal {
-          position: fixed;
-          top: 20px;
-          right: 20px;
-          width: 350px;
-          background: white;
-          border-radius: 12px;
-          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-          border: 1px solid #e9ecef;
-          z-index: 1000;
-          animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-
-        .modal-header {
-          padding: 1rem 1.5rem;
-          border-bottom: 1px solid #e9ecef;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-
-        .modal-title {
-          display: flex;
-          align-items: center;
-          font-size: 1rem;
-          font-weight: 600;
-          color: #2c5aa0;
-          margin: 0;
-        }
-
-        .modal-icon {
-          font-size: 1.2rem;
-          margin-right: 0.5rem;
-        }
-
-        .close-button {
-          background: none;
-          border: none;
-          font-size: 1.5rem;
-          cursor: pointer;
-          color: #666;
-          padding: 0;
-          width: 30px;
-          height: 30px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 50%;
-          transition: all 0.2s ease;
-        }
-
-        .close-button:hover {
-          background: #f8f9fa;
-          color: #333;
-        }
-
-        .modal-body {
-          padding: 1.5rem;
-        }
-
-        .modal-message {
-          font-size: 0.9rem;
-          color: #666;
-          line-height: 1.5;
-          margin-bottom: 1rem;
-        }
-
-        .user-email {
-          font-weight: 600;
-          color: #2c5aa0;
-        }
-
-        .modal-actions {
-          display: flex;
-          gap: 0.75rem;
-          flex-wrap: wrap;
-        }
-
-        .btn {
-          padding: 0.5rem 1rem;
-          border: none;
-          border-radius: 6px;
-          font-size: 0.8rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-
-        .btn-primary {
-          background: #2c5aa0;
-          color: white;
-        }
-
-        .btn-primary:hover {
-          background: #1e3a8a;
-          transform: translateY(-1px);
-        }
-
-        .btn-secondary {
-          background: #f8f9fa;
-          color: #666;
-          border: 1px solid #e9ecef;
-        }
-
-        .btn-secondary:hover {
-          background: #e9ecef;
-          color: #333;
-        }
-
-        .btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-          transform: none;
-        }
-
-        .btn:disabled:hover {
-          background: inherit;
-          transform: none;
-        }
-
-        .warning-badge {
-          background: #fff3cd;
-          color: #856404;
-          padding: 0.25rem 0.5rem;
-          border-radius: 4px;
-          font-size: 0.7rem;
-          font-weight: 500;
-          margin-left: 0.5rem;
-        }
-
-        @media (max-width: 768px) {
-          .email-confirmation-modal {
-            top: 10px;
-            right: 10px;
-            left: 10px;
-            width: auto;
-          }
-
-          .modal-header {
-            padding: 0.75rem 1rem;
-          }
-
-          .modal-body {
-            padding: 1rem;
-          }
-
-          .modal-actions {
-            flex-direction: column;
-          }
-
-          .btn {
-            width: 100%;
-            justify-content: center;
-          }
-        }
-      `}</style>
-
-      <div className="modal-header">
-        <h3 className="modal-title">
-          <span className="modal-icon">📧</span>
-          Confirme seu e-mail
-          <span className="warning-badge">Não confirmado</span>
-        </h3>
-        <button className="close-button" onClick={handleDismiss}>
-          ×
-        </button>
-      </div>
-
-      <div className="modal-body">
-        <p className="modal-message">
-          Para continuar usando a aplicação, confirme seu email{' '}
-          <span className="user-email">{user?.email}</span>. 
-          Verifique sua caixa de entrada e clique no link de confirmação 
-          que foi enviado para ativar completamente sua conta.
-        </p>
-
-        <div className="modal-actions">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center gap-2">
+            <Mail className="w-5 h-5 text-blue-600" />
+            <h3 className="text-lg font-semibold text-gray-900">
+              Confirme seu Email
+            </h3>
+          </div>
           <button 
-            className="btn btn-primary"
-            onClick={handleResendEmail}
-            disabled={isResending}
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
           >
-            {isResending ? '⏳ Enviando...' : '📤 Reenviar email'}
+            <X className="w-5 h-5" />
           </button>
-          <button 
-            className="btn btn-secondary"
-            onClick={handleDismiss}
-            disabled={isResending}
-          >
-            ⏰ Lembrar depois
-          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 space-y-4">
+          {/* Status Alert */}
+          <div className={`flex items-center gap-2 p-3 rounded-lg ${
+            daysRemaining <= 1 ? 'bg-red-50' : 
+            daysRemaining <= 3 ? 'bg-orange-50' : 'bg-yellow-50'
+          }`}>
+            {getStatusIcon()}
+            <div>
+              <p className={`font-medium ${getStatusColor()}`}>
+                {daysRemaining > 0 
+                  ? `${daysRemaining} ${daysRemaining === 1 ? 'dia restante' : 'dias restantes'}`
+                  : 'Prazo expirado'
+                }
+              </p>
+              <p className="text-sm text-gray-600">
+                {daysRemaining > 0 
+                  ? 'para confirmar seu email'
+                  : 'Sua conta será bloqueada'
+                }
+              </p>
+            </div>
+          </div>
+
+          {/* Email Info */}
+          <div>
+            <p className="text-gray-700 mb-2">
+              Enviamos um email de confirmação para:
+            </p>
+            <p className="font-medium text-gray-900 bg-gray-50 p-2 rounded">
+              {user?.email}
+            </p>
+          </div>
+
+          {/* Warning */}
+          <div className="bg-blue-50 p-3 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Importante:</strong> Você pode usar o sistema normalmente, mas precisa 
+              confirmar seu email em até 7 dias para manter o acesso.
+            </p>
+          </div>
+
+          {/* Actions */}
+          <div className="space-y-2">
+            <button
+              onClick={handleResendEmail}
+              disabled={isResending}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 
+                       disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isResending ? 'Reenviando...' : 'Reenviar Email de Confirmação'}
+            </button>
+
+            {resendSuccess && (
+              <p className="text-sm text-green-600 text-center">
+                ✓ Email reenviado com sucesso!
+              </p>
+            )}
+
+            <button
+              onClick={onClose}
+              className="w-full bg-gray-200 text-gray-800 py-2 px-4 rounded-lg 
+                       hover:bg-gray-300 transition-colors"
+            >
+              Continuar usando o sistema
+            </button>
+          </div>
         </div>
       </div>
     </div>

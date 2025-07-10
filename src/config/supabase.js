@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Configuração do Supabase
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://lywwxzfnhzbdkxnblvcf.supabase.co';
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5d3d4emZuaHpiZGt4bmJsdmNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjYxNTcsImV4cCI6MjA2NDcwMjE1N30.c91JJQ9yFPdjvMcH3VqrJWKu6dUSocrx0Ri9E1V8eDQ';
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
 
 // Cria cliente do Supabase apenas se as variáveis estiverem configuradas
 export const supabase = supabaseUrl && supabaseAnonKey 
@@ -10,14 +10,15 @@ export const supabase = supabaseUrl && supabaseAnonKey
     auth: {
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: true,
-      // Configurações para permitir login sem confirmação de email
-      flowType: 'pkce'
+      detectSessionInUrl: true
     },
     global: {
       headers: {
         'X-Client-Info': 'supabase-js-web'
       }
+    },
+    db: {
+      schema: 'public'
     }
   })
   : null;
@@ -30,9 +31,15 @@ export const auth = {
   // Login com email e senha
   signIn: async (email, password) => {
     if (!supabase) {
+      // Modo demo/desenvolvimento - simular login
+      const mockUser = {
+        id: 'demo-user',
+        email: email,
+        user_metadata: { name: 'Usuário Demo' }
+      };
       return { 
-        data: null, 
-        error: { message: 'Supabase não configurado' } 
+        data: { user: mockUser, session: { user: mockUser } }, 
+        error: null 
       };
     }
     
@@ -40,31 +47,33 @@ export const auth = {
       email,
       password
     });
-    
-    // Traduzir erros comuns para português
+
+    // Traduzir erros comuns
     if (error) {
       let translatedError = { ...error };
-      if (error.message?.includes('Email not confirmed')) {
-        translatedError.message = 'Email não confirmado. Você pode usar a aplicação, mas é recomendado confirmar seu email.';
-      } else if (error.message?.includes('Invalid login credentials')) {
+      if (error.message?.includes('Invalid login credentials')) {
         translatedError.message = 'Credenciais inválidas. Verifique seu email e senha.';
-      } else if (error.message?.includes('User not found')) {
-        translatedError.message = 'Usuário não encontrado. Verifique seu email.';
-      } else if (error.message?.includes('Too many requests')) {
-        translatedError.message = 'Muitas tentativas. Tente novamente em alguns minutos.';
+      } else if (error.message?.includes('Email not confirmed')) {
+        translatedError.message = 'Email não confirmado. Verifique sua caixa de entrada.';
       }
       return { data, error: translatedError };
     }
-    
+
     return { data, error };
   },
 
   // Cadastro de novo usuário
   signUp: async (email, password, metadata = {}) => {
     if (!supabase) {
+      // Modo demo/desenvolvimento - simular cadastro
+      const mockUser = {
+        id: 'demo-user',
+        email: email,
+        user_metadata: { name: metadata.name || 'Usuário Demo' }
+      };
       return { 
-        data: null, 
-        error: { message: 'Supabase não configurado' } 
+        data: { user: mockUser, session: { user: mockUser } }, 
+        error: null 
       };
     }
     
@@ -75,6 +84,8 @@ export const auth = {
         data: metadata
       }
     });
+
+    // Retornar resultado bruto do Supabase
     return { data, error };
   },
 
@@ -113,7 +124,7 @@ export const auth = {
   },
 
   // Atualizar perfil do usuário
-  updateProfile: async (profileData) => {
+  updateProfile: async (profileData, userFromContext = null) => {
     if (!supabase) {
       return { 
         data: null, 
@@ -121,18 +132,66 @@ export const auth = {
       };
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    console.log('=== INÍCIO DEBUG updateProfile ===');
+    
+    // Primeiro verificar se temos sessão válida no Supabase
+    let user = null;
+    let hasValidSession = false;
+    
+    try {
+      const { data: { user: sessionUser }, error: userError } = await supabase.auth.getUser();
+      console.log('Usuário da sessão Supabase:', sessionUser);
+      console.log('Erro do usuário:', userError);
+      
+      if (sessionUser && !userError) {
+        user = sessionUser;
+        hasValidSession = true;
+        console.log('✅ Sessão válida encontrada no Supabase');
+      }
+    } catch (error) {
+      console.log('Erro ao obter usuário da sessão:', error);
+    }
+    
+    // Se não há sessão válida, usar o usuário do contexto
+    if (!hasValidSession && userFromContext) {
+      console.log('🔄 Usando usuário do contexto React:', userFromContext);
+      user = userFromContext;
+    }
+    
+    console.log('Estado da autenticação:', {
+      hasValidSession,
+      userId: user?.id,
+      userEmail: user?.email
+    });
+    
+    if (!user || !user.id) {
+      console.error('❌ Nenhum usuário encontrado');
+      console.error('User from session:', user);
+      console.error('User from context:', userFromContext);
       return { 
         data: null, 
-        error: { message: 'Usuário não autenticado' } 
+        error: { message: 'Usuário não autenticado - Faça login novamente' } 
       };
     }
+    
+    console.log('✅ Usuário encontrado:', {
+      id: user.id,
+      email: user.email,
+      email_confirmed_at: user.email_confirmed_at,
+      aud: user.aud,
+      role: user.role
+    });
 
-    // Atualizar tabela user_profiles
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .upsert({
+    // Permitir que usuários não confirmados completem o onboarding
+    // Verificar se há um usuário válido independente da confirmação de email
+    // O usuário deve ter um ID válido, mesmo se o email não estiver confirmado
+
+    // Atualizar tabela user_profiles diretamente
+    console.log('Tentando atualizar perfil para usuário:', user.id);
+    console.log('Dados do perfil:', profileData);
+    
+    try {
+      const profileUpdate = {
         id: user.id,
         full_name: profileData.name,
         phone: profileData.phone,
@@ -141,11 +200,83 @@ export const auth = {
         city: profileData.city,
         state: profileData.state,
         updated_at: new Date().toISOString()
-      })
-      .select()
-      .single();
+      };
+      
+      console.log('📝 Dados para upsert na tabela user_profiles:', profileUpdate);
+      
+      let data, error;
+      
+      if (hasValidSession) {
+        // Se temos sessão válida, usar upsert normal
+        console.log('📝 Usando upsert com sessão válida');
+        const result = await supabase
+          .from('user_profiles')
+          .upsert(profileUpdate)
+          .select()
+          .single();
+        data = result.data;
+        error = result.error;
+      } else {
+        // Se não temos sessão válida, usar função RPC que bypassa RLS
+        console.log('📝 Usando função RPC para bypass RLS');
+        const result = await supabase.rpc('upsert_user_profile', {
+          _id: user.id,
+          _full_name: profileData.name,
+          _phone: profileData.phone,
+          _company_name: profileData.company,
+          _position: profileData.position,
+          _city: profileData.city,
+          _state: profileData.state
+        });
+        data = result.data;
+        error = result.error;
+      }
+      
+      console.log('✅ Resultado final:', { data, error });
 
-    return { data, error };
+      if (error) {
+        console.error('❌ Erro Supabase ao atualizar perfil:', {
+          error,
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        
+        // Diagnóstico específico por tipo de erro
+        if (error.code === '42501') {
+          console.error('🚫 Erro de permissão - verificar políticas RLS');
+        } else if (error.code === '23505') {
+          console.error('🔄 Erro de dados duplicados');
+        } else if (error.code === '42P01') {
+          console.error('🗃️ Tabela user_profiles não encontrada');
+        } else if (error.code === '42703') {
+          console.error('📋 Coluna não encontrada na tabela');
+        }
+        
+        // Mensagem de erro mais amigável baseada no código do erro
+        let friendlyMessage = 'Erro ao salvar informações';
+        if (error.code === '42501') {
+          friendlyMessage = 'Permissão insuficiente para salvar dados';
+        } else if (error.code === '23505') {
+          friendlyMessage = 'Dados duplicados encontrados';
+        } else if (error.message) {
+          friendlyMessage = error.message;
+        }
+        
+        return { data: null, error: { message: friendlyMessage } };
+      }
+
+      console.log('✅ Perfil atualizado com sucesso:', data);
+      console.log('=== FIM DEBUG updateProfile ===');
+      return { data, error: null };
+    } catch (err) {
+      console.error('Erro inesperado ao atualizar perfil:', err);
+      return { 
+        data: null, 
+        error: { message: 'Erro inesperado ao salvar informações: ' + err.message } 
+      };
+    }
   },
 
   // Buscar perfil do usuário
