@@ -167,7 +167,7 @@ const BudgetViewer = ({ customLink }) => {
       }
 
       if (data && data.length > 0) {
-        setSuccess('✅ Orçamento aprovado com sucesso! O profissional será notificado.');
+        setSuccess('Orçamento aprovado com sucesso! O profissional será notificado.');
         setBudget(prev => ({ ...prev, status: 'approved', approval_date: new Date().toISOString() }));
       } else {
         setError('Erro ao aprovar orçamento');
@@ -197,7 +197,7 @@ const BudgetViewer = ({ customLink }) => {
       }
 
       if (data && data.length > 0) {
-        setSuccess('❌ Orçamento rejeitado. O profissional será notificado com seus comentários.');
+        setSuccess('Orçamento rejeitado. O profissional será notificado com seus comentários.');
         setBudget(prev => ({ 
           ...prev, 
           status: 'rejected', 
@@ -231,7 +231,7 @@ const BudgetViewer = ({ customLink }) => {
         minHeight: '100vh',
         fontSize: '1.2rem' 
       }}>
-        ⏳ Carregando orçamento...
+        Carregando orçamento...
       </div>
     );
   }
@@ -247,22 +247,21 @@ const BudgetViewer = ({ customLink }) => {
         padding: '2rem',
         textAlign: 'center'
       }}>
-        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>❌</div>
-        <h2 style={{ color: '#dc3545', marginBottom: '1rem' }}>Orçamento Não Encontrado</h2>
+        <h2 style={{ color: '#333', marginBottom: '1rem' }}>Orçamento Não Encontrado</h2>
         <p style={{ color: '#666', marginBottom: '2rem' }}>{error}</p>
         <button
           onClick={() => window.location.href = '/'}
           style={{
-            background: '#007bff',
+            background: '#666',
             color: 'white',
             border: 'none',
-            padding: '1rem 2rem',
-            borderRadius: '8px',
+            padding: '0.8rem 1.5rem',
+            borderRadius: '4px',
             fontSize: '1rem',
             cursor: 'pointer'
           }}
         >
-          🏠 Voltar ao Início
+          Voltar ao Início
         </button>
       </div>
     );
@@ -271,27 +270,27 @@ const BudgetViewer = ({ customLink }) => {
   return (
     <div style={{ 
       minHeight: '100vh', 
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      background: '#f5f5f5',
       padding: '2rem 0'
     }}>
       <div style={{ 
         maxWidth: '800px', 
         margin: '0 auto', 
         background: 'white', 
-        borderRadius: '12px',
-        boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+        borderRadius: '8px',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
         overflow: 'hidden'
       }}>
         
         {/* Header */}
         <div style={{
-          background: 'linear-gradient(135deg, #2c5aa0, #1e3a5f)',
-          color: 'white',
+          background: '#fff',
+          borderBottom: '1px solid #e5e5e5',
           padding: '2rem',
           textAlign: 'center'
         }}>
-          <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}>💰 Proposta de Orçamento</h1>
-          <p style={{ margin: 0, opacity: 0.9 }}>
+          <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '1.75rem', color: '#333' }}>Proposta de Orçamento</h1>
+          <p style={{ margin: 0, color: '#666', fontSize: '1rem' }}>
             Georreferenciamento e Serviços Técnicos
           </p>
         </div>
@@ -301,25 +300,27 @@ const BudgetViewer = ({ customLink }) => {
           {/* Messages */}
           {error && (
             <div style={{ 
-              background: '#f8d7da', 
-              color: '#721c24', 
+              background: '#fff5f5', 
+              color: '#666', 
               padding: '1rem', 
-              borderRadius: '6px', 
+              borderRadius: '4px', 
               marginBottom: '2rem',
-              textAlign: 'center'
+              textAlign: 'center',
+              border: '1px solid #ffdddd'
             }}>
-              ❌ {error}
+              {error}
             </div>
           )}
 
           {success && (
             <div style={{ 
-              background: '#d4edda', 
-              color: '#155724', 
+              background: '#f5fff5', 
+              color: '#666', 
               padding: '1rem', 
-              borderRadius: '6px', 
+              borderRadius: '4px', 
               marginBottom: '2rem',
-              textAlign: 'center'
+              textAlign: 'center',
+              border: '1px solid #ddffdd'
             }}>
               {success}
             </div>
@@ -328,23 +329,24 @@ const BudgetViewer = ({ customLink }) => {
           {/* Status do Orçamento */}
           {budget.status && budget.status !== 'active' && (
             <div style={{
-              background: budget.status === 'approved' ? '#d4edda' : '#f8d7da',
-              color: budget.status === 'approved' ? '#155724' : '#721c24',
+              background: '#f8f8f8',
+              border: `2px solid ${budget.status === 'approved' ? '#28a745' : '#dc3545'}`,
+              color: '#333',
               padding: '1.5rem',
-              borderRadius: '8px',
+              borderRadius: '4px',
               marginBottom: '2rem',
-              textAlign: 'center',
-              fontSize: '1.1rem',
-              fontWeight: 'bold'
+              textAlign: 'center'
             }}>
-              {budget.status === 'approved' ? '✅ ORÇAMENTO APROVADO' : '❌ ORÇAMENTO REJEITADO'}
+              <div style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+                {budget.status === 'approved' ? 'ORÇAMENTO APROVADO' : 'ORÇAMENTO REJEITADO'}
+              </div>
               {budget.approval_date && (
-                <div style={{ fontSize: '0.9rem', fontWeight: 'normal', marginTop: '0.5rem' }}>
+                <div style={{ fontSize: '0.9rem', color: '#666' }}>
                   em {new Date(budget.approval_date).toLocaleDateString('pt-BR')}
                 </div>
               )}
               {budget.rejection_date && (
-                <div style={{ fontSize: '0.9rem', fontWeight: 'normal', marginTop: '0.5rem' }}>
+                <div style={{ fontSize: '0.9rem', color: '#666' }}>
                   em {new Date(budget.rejection_date).toLocaleDateString('pt-BR')}
                   {budget.rejection_comment && (
                     <div style={{ marginTop: '0.5rem', fontStyle: 'italic' }}>
@@ -359,20 +361,22 @@ const BudgetViewer = ({ customLink }) => {
           {/* Informações do Cliente */}
           <section style={{ marginBottom: '2rem' }}>
             <h3 style={{ 
-              color: '#2c5aa0', 
-              borderBottom: '2px solid #e9ecef', 
+              color: '#333', 
+              borderBottom: '1px solid #e5e5e5', 
               paddingBottom: '0.5rem',
-              marginBottom: '1rem'
+              marginBottom: '1rem',
+              fontSize: '1.25rem'
             }}>
-              👤 Informações do Cliente
+              Informações do Cliente
             </h3>
             <div style={{ 
               display: 'grid', 
               gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
               gap: '1rem',
-              background: '#f8f9fa',
-              padding: '1.5rem',
-              borderRadius: '8px'
+              background: '#fafafa',
+              padding: '1rem',
+              borderRadius: '4px',
+              border: '1px solid #e5e5e5'
             }}>
               <div>
                 <strong>Nome:</strong> {budget.budget_request.client_name}
@@ -392,20 +396,22 @@ const BudgetViewer = ({ customLink }) => {
           {/* Dados da Propriedade */}
           <section style={{ marginBottom: '2rem' }}>
             <h3 style={{ 
-              color: '#2c5aa0', 
-              borderBottom: '2px solid #e9ecef', 
+              color: '#333', 
+              borderBottom: '1px solid #e5e5e5', 
               paddingBottom: '0.5rem',
-              marginBottom: '1rem'
+              marginBottom: '1rem',
+              fontSize: '1.25rem'
             }}>
-              🏞️ Dados da Propriedade
+              Dados da Propriedade
             </h3>
             <div style={{ 
               display: 'grid', 
               gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
               gap: '1rem',
-              background: '#f8f9fa',
-              padding: '1.5rem',
-              borderRadius: '8px'
+              background: '#fafafa',
+              padding: '1rem',
+              borderRadius: '4px',
+              border: '1px solid #e5e5e5'
             }}>
               <div>
                 <strong>Nome:</strong> {budget.budget_request.property_name}
@@ -425,17 +431,19 @@ const BudgetViewer = ({ customLink }) => {
           {/* Serviços Inclusos */}
           <section style={{ marginBottom: '2rem' }}>
             <h3 style={{ 
-              color: '#2c5aa0', 
-              borderBottom: '2px solid #e9ecef', 
+              color: '#333', 
+              borderBottom: '1px solid #e5e5e5', 
               paddingBottom: '0.5rem',
-              marginBottom: '1rem'
+              marginBottom: '1rem',
+              fontSize: '1.25rem'
             }}>
-              ⚙️ Serviços Inclusos
+              Serviços Inclusos
             </h3>
             <div style={{ 
-              background: '#f8f9fa',
-              padding: '1.5rem',
-              borderRadius: '8px'
+              background: '#fafafa',
+              padding: '1rem',
+              borderRadius: '4px',
+              border: '1px solid #e5e5e5'
             }}>
               <div style={{ marginBottom: '0.5rem' }}>
                 ✅ Georreferenciamento conforme Lei 10.267/2001
@@ -467,48 +475,45 @@ const BudgetViewer = ({ customLink }) => {
           {budget.budget_result.breakdown && (
             <section style={{ marginBottom: '2rem' }}>
               <h3 style={{ 
-                color: '#2c5aa0', 
-                borderBottom: '2px solid #e9ecef', 
+                color: '#333', 
+                borderBottom: '1px solid #e5e5e5', 
                 paddingBottom: '0.5rem',
-                marginBottom: '1rem'
+                marginBottom: '1rem',
+                fontSize: '1.25rem'
               }}>
-                💳 Detalhamento de Custos
+                Detalhamento de Custos
               </h3>
               <table style={{ 
                 width: '100%', 
                 borderCollapse: 'collapse',
                 background: 'white',
-                border: '1px solid #dee2e6',
-                borderRadius: '8px',
-                overflow: 'hidden'
+                border: '1px solid #e5e5e5'
               }}>
                 <thead>
-                  <tr style={{ background: '#2c5aa0', color: 'white' }}>
-                    <th style={{ padding: '1rem', textAlign: 'left' }}>Item</th>
-                    <th style={{ padding: '1rem', textAlign: 'right' }}>Valor</th>
+                  <tr style={{ background: '#f8f8f8', borderBottom: '2px solid #e5e5e5' }}>
+                    <th style={{ padding: '1rem', textAlign: 'left', color: '#333' }}>Item</th>
+                    <th style={{ padding: '1rem', textAlign: 'right', color: '#333' }}>Valor</th>
                   </tr>
                 </thead>
                 <tbody>
                   {budget.budget_result.breakdown.map((item, index) => (
                     <tr key={index} style={{ 
-                      borderBottom: '1px solid #dee2e6',
-                      background: index % 2 === 0 ? '#f8f9fa' : 'white'
+                      borderBottom: '1px solid #e5e5e5'
                     }}>
-                      <td style={{ padding: '1rem' }}>{item.item}</td>
-                      <td style={{ padding: '1rem', textAlign: 'right' }}>
+                      <td style={{ padding: '1rem', color: '#555' }}>{item.item}</td>
+                      <td style={{ padding: '1rem', textAlign: 'right', color: '#555' }}>
                         {item.value < 0 ? '-' : ''}
                         {formatCurrency(Math.abs(item.value))}
                       </td>
                     </tr>
                   ))}
                   <tr style={{ 
-                    background: '#28a745', 
-                    color: 'white', 
+                    borderTop: '2px solid #333',
                     fontWeight: 'bold',
                     fontSize: '1.1rem'
                   }}>
-                    <td style={{ padding: '1rem' }}>TOTAL</td>
-                    <td style={{ padding: '1rem', textAlign: 'right' }}>
+                    <td style={{ padding: '1rem', color: '#333' }}>TOTAL</td>
+                    <td style={{ padding: '1rem', textAlign: 'right', color: '#333' }}>
                       {formatCurrency(budget.budget_result.total_price || budget.budget_result.total_cost)}
                     </td>
                   </tr>
@@ -520,20 +525,19 @@ const BudgetViewer = ({ customLink }) => {
           {/* Valor Total Destacado */}
           <section style={{ marginBottom: '2rem' }}>
             <div style={{
-              background: 'linear-gradient(135deg, #28a745, #20c997)',
-              color: 'white',
+              background: '#f8f8f8',
+              border: '2px solid #333',
               padding: '2rem',
-              borderRadius: '12px',
-              textAlign: 'center',
-              boxShadow: '0 4px 15px rgba(40, 167, 69, 0.3)'
+              borderRadius: '4px',
+              textAlign: 'center'
             }}>
-              <div style={{ fontSize: '1.1rem', marginBottom: '0.5rem', opacity: 0.9 }}>
+              <div style={{ fontSize: '1rem', marginBottom: '0.5rem', color: '#666' }}>
                 Valor Total do Investimento:
               </div>
-              <div style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+              <div style={{ fontSize: '2.2rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#333' }}>
                 {formatCurrency(budget.budget_result.total_price || budget.budget_result.total_cost)}
               </div>
-              <div style={{ fontSize: '1rem', opacity: 0.9 }}>
+              <div style={{ fontSize: '0.95rem', color: '#666' }}>
                 Prazo estimado: {budget.budget_result.estimated_days || 15} dias úteis
               </div>
             </div>
@@ -543,19 +547,20 @@ const BudgetViewer = ({ customLink }) => {
           {budget.budget_request.additional_notes && (
             <section style={{ marginBottom: '2rem' }}>
               <h3 style={{ 
-                color: '#2c5aa0', 
-                borderBottom: '2px solid #e9ecef', 
+                color: '#333', 
+                borderBottom: '1px solid #e5e5e5', 
                 paddingBottom: '0.5rem',
-                marginBottom: '1rem'
+                marginBottom: '1rem',
+                fontSize: '1.25rem'
               }}>
-                📝 Observações Adicionais
+                Observações Adicionais
               </h3>
               <div style={{ 
-                background: '#fff3cd',
-                border: '1px solid #ffeaa7',
-                padding: '1.5rem',
-                borderRadius: '8px',
-                color: '#856404'
+                background: '#fafafa',
+                border: '1px solid #e5e5e5',
+                padding: '1rem',
+                borderRadius: '4px',
+                color: '#555'
               }}>
                 {budget.budget_request.additional_notes}
               </div>
@@ -565,29 +570,31 @@ const BudgetViewer = ({ customLink }) => {
           {/* Condições Comerciais */}
           <section style={{ marginBottom: '2rem' }}>
             <h3 style={{ 
-              color: '#2c5aa0', 
-              borderBottom: '2px solid #e9ecef', 
+              color: '#333', 
+              borderBottom: '1px solid #e5e5e5', 
               paddingBottom: '0.5rem',
-              marginBottom: '1rem'
+              marginBottom: '1rem',
+              fontSize: '1.25rem'
             }}>
-              📋 Condições Comerciais
+              Condições Comerciais
             </h3>
             <div style={{ 
-              background: '#e3f2fd',
-              padding: '1.5rem',
-              borderRadius: '8px'
+              background: '#fafafa',
+              padding: '1rem',
+              borderRadius: '4px',
+              border: '1px solid #e5e5e5'
             }}>
-              <div style={{ marginBottom: '0.5rem' }}>
-                💰 <strong>Pagamento:</strong> 50% no início + 50% na entrega
+              <div style={{ marginBottom: '0.5rem', color: '#555' }}>
+                <strong>Pagamento:</strong> 50% no início + 50% na entrega
               </div>
-              <div style={{ marginBottom: '0.5rem' }}>
-                ⏱️ <strong>Validade da proposta:</strong> 30 dias
+              <div style={{ marginBottom: '0.5rem', color: '#555' }}>
+                <strong>Validade da proposta:</strong> 30 dias
               </div>
-              <div style={{ marginBottom: '0.5rem' }}>
-                📄 <strong>Inclui:</strong> ART/TRT do responsável técnico
+              <div style={{ marginBottom: '0.5rem', color: '#555' }}>
+                <strong>Inclui:</strong> ART/TRT do responsável técnico
               </div>
-              <div>
-                📦 <strong>Entrega:</strong> Documentação em formato digital e físico
+              <div style={{ color: '#555' }}>
+                <strong>Entrega:</strong> Documentação em formato digital e físico
               </div>
             </div>
           </section>
@@ -595,19 +602,19 @@ const BudgetViewer = ({ customLink }) => {
           {/* Informações da Empresa */}
           <section style={{ marginBottom: '2rem' }}>
             <div style={{
-              background: '#f8f9fa',
-              border: '2px solid #dee2e6',
+              background: '#fafafa',
+              border: '1px solid #e5e5e5',
               padding: '1.5rem',
-              borderRadius: '8px',
+              borderRadius: '4px',
               textAlign: 'center'
             }}>
-              <h4 style={{ color: '#2c5aa0', marginBottom: '1rem' }}>
-                🌱 OnGeo
+              <h4 style={{ color: '#333', marginBottom: '0.5rem' }}>
+                OnGeo
               </h4>
-              <p style={{ margin: '0 0 0.5rem 0' }}>
+              <p style={{ margin: '0 0 0.5rem 0', color: '#666' }}>
                 Assistente IA para profissionais de georreferenciamento
               </p>
-              <p style={{ margin: 0, fontSize: '0.9rem', color: '#666' }}>
+              <p style={{ margin: 0, fontSize: '0.9rem', color: '#888' }}>
                 Sistema homologado para georreferenciamento rural
               </p>
             </div>
@@ -617,17 +624,18 @@ const BudgetViewer = ({ customLink }) => {
           {(!budget.status || budget.status === 'active') && (
             <section style={{ marginBottom: '2rem' }}>
               <div style={{
-                background: 'linear-gradient(135deg, #f8f9fa, #e9ecef)',
+                background: '#fafafa',
                 padding: '2rem',
-                borderRadius: '12px',
-                border: '2px solid #dee2e6'
+                borderRadius: '4px',
+                border: '1px solid #e5e5e5'
               }}>
                 <h3 style={{ 
-                  color: '#2c5aa0', 
+                  color: '#333', 
                   textAlign: 'center',
-                  marginBottom: '1.5rem'
+                  marginBottom: '1.5rem',
+                  fontSize: '1.25rem'
                 }}>
-                  📝 Sua Decisão sobre a Proposta
+                  Sua Decisão sobre a Proposta
                 </h3>
                 
                 {!showRejectForm ? (
@@ -636,43 +644,43 @@ const BudgetViewer = ({ customLink }) => {
                       onClick={handleApprove}
                       disabled={isSubmitting}
                       style={{
-                        background: 'linear-gradient(135deg, #28a745, #20c997)',
+                        background: '#28a745',
                         color: 'white',
                         border: 'none',
-                        padding: '1.2rem 2.5rem',
-                        borderRadius: '8px',
-                        fontSize: '1.2rem',
+                        padding: '1rem 2rem',
+                        borderRadius: '4px',
+                        fontSize: '1.1rem',
                         fontWeight: '600',
                         cursor: isSubmitting ? 'not-allowed' : 'pointer',
                         marginRight: '1rem',
-                        boxShadow: '0 4px 15px rgba(40, 167, 69, 0.3)',
-                        opacity: isSubmitting ? 0.6 : 1
+                        opacity: isSubmitting ? 0.6 : 1,
+                        transition: 'all 0.2s'
                       }}
                     >
-                      {isSubmitting ? '⏳ Processando...' : '✅ Aprovar Orçamento'}
+                      {isSubmitting ? 'Processando...' : 'Aprovar Orçamento'}
                     </button>
                     <button
                       onClick={() => setShowRejectForm(true)}
                       disabled={isSubmitting}
                       style={{
-                        background: 'linear-gradient(135deg, #dc3545, #c82333)',
+                        background: '#dc3545',
                         color: 'white',
                         border: 'none',
-                        padding: '1.2rem 2.5rem',
-                        borderRadius: '8px',
-                        fontSize: '1.2rem',
+                        padding: '1rem 2rem',
+                        borderRadius: '4px',
+                        fontSize: '1.1rem',
                         fontWeight: '600',
                         cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                        boxShadow: '0 4px 15px rgba(220, 53, 69, 0.3)',
-                        opacity: isSubmitting ? 0.6 : 1
+                        opacity: isSubmitting ? 0.6 : 1,
+                        transition: 'all 0.2s'
                       }}
                     >
-                      ❌ Rejeitar Orçamento
+                      Rejeitar Orçamento
                     </button>
                   </div>
                 ) : (
                   <div>
-                    <h4 style={{ color: '#dc3545', marginBottom: '1rem' }}>
+                    <h4 style={{ color: '#333', marginBottom: '1rem' }}>
                       Motivo da Rejeição
                     </h4>
                     <textarea
@@ -683,8 +691,8 @@ const BudgetViewer = ({ customLink }) => {
                         width: '100%',
                         minHeight: '120px',
                         padding: '1rem',
-                        borderRadius: '6px',
-                        border: '2px solid #dee2e6',
+                        borderRadius: '4px',
+                        border: '1px solid #d0d0d0',
                         fontSize: '1rem',
                         marginBottom: '1rem',
                         resize: 'vertical'
@@ -698,8 +706,8 @@ const BudgetViewer = ({ customLink }) => {
                           background: '#dc3545',
                           color: 'white',
                           border: 'none',
-                          padding: '1rem 2rem',
-                          borderRadius: '6px',
+                          padding: '0.8rem 1.5rem',
+                          borderRadius: '4px',
                           fontSize: '1rem',
                           fontWeight: '600',
                           cursor: (isSubmitting || !rejectComment.trim()) ? 'not-allowed' : 'pointer',
@@ -707,7 +715,7 @@ const BudgetViewer = ({ customLink }) => {
                           opacity: (isSubmitting || !rejectComment.trim()) ? 0.6 : 1
                         }}
                       >
-                        {isSubmitting ? '⏳ Enviando...' : '📤 Enviar Rejeição'}
+                        {isSubmitting ? 'Enviando...' : 'Enviar Rejeição'}
                       </button>
                       <button
                         onClick={() => {
@@ -718,17 +726,17 @@ const BudgetViewer = ({ customLink }) => {
                         disabled={isSubmitting}
                         style={{
                           background: 'transparent',
-                          color: '#6c757d',
-                          border: '2px solid #6c757d',
-                          padding: '1rem 2rem',
-                          borderRadius: '6px',
+                          color: '#666',
+                          border: '1px solid #d0d0d0',
+                          padding: '0.8rem 1.5rem',
+                          borderRadius: '4px',
                           fontSize: '1rem',
                           fontWeight: '600',
                           cursor: isSubmitting ? 'not-allowed' : 'pointer',
                           opacity: isSubmitting ? 0.6 : 1
                         }}
                       >
-                        ❌ Cancelar
+                        Cancelar
                       </button>
                     </div>
                   </div>
@@ -742,50 +750,49 @@ const BudgetViewer = ({ customLink }) => {
             <button
               onClick={generatePDF}
               style={{
-                background: 'linear-gradient(135deg, #6f42c1, #5a32a3)',
+                background: '#666',
                 color: 'white',
                 border: 'none',
-                padding: '1rem 2rem',
-                borderRadius: '8px',
-                fontSize: '1.1rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                marginRight: '1rem',
-                boxShadow: '0 4px 15px rgba(111, 66, 193, 0.3)'
-              }}
-            >
-              📄 Baixar Proposta em PDF
-            </button>
-            <button
-              onClick={() => window.location.href = '/'}
-              style={{
-                background: 'transparent',
-                color: '#2c5aa0',
-                border: '2px solid #2c5aa0',
-                padding: '1rem 2rem',
-                borderRadius: '8px',
-                fontSize: '1.1rem',
+                padding: '0.8rem 1.5rem',
+                borderRadius: '4px',
+                fontSize: '1rem',
                 fontWeight: '600',
                 cursor: 'pointer',
                 marginRight: '1rem'
               }}
             >
-              🏠 Conhecer a Plataforma
+              Baixar Proposta em PDF
+            </button>
+            <button
+              onClick={() => window.location.href = '/'}
+              style={{
+                background: 'transparent',
+                color: '#666',
+                border: '1px solid #d0d0d0',
+                padding: '0.8rem 1.5rem',
+                borderRadius: '4px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                marginRight: '1rem'
+              }}
+            >
+              Conhecer a Plataforma
             </button>
             <button
               onClick={() => window.location.href = '/#budgets'}
               style={{
-                background: '#17a2b8',
+                background: '#666',
                 color: 'white',
                 border: 'none',
-                padding: '1rem 2rem',
-                borderRadius: '8px',
-                fontSize: '1.1rem',
+                padding: '0.8rem 1.5rem',
+                borderRadius: '4px',
+                fontSize: '1rem',
                 fontWeight: '600',
                 cursor: 'pointer'
               }}
             >
-              🏢 Central de Orçamentos
+              Central de Orçamentos
             </button>
           </div>
 
@@ -794,8 +801,8 @@ const BudgetViewer = ({ customLink }) => {
             textAlign: 'center', 
             marginTop: '2rem', 
             paddingTop: '2rem',
-            borderTop: '1px solid #dee2e6',
-            color: '#666',
+            borderTop: '1px solid #e5e5e5',
+            color: '#888',
             fontSize: '0.9rem'
           }}>
             Orçamento gerado em {formatDate(budget.created_at)}<br/>
