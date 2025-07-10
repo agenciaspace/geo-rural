@@ -22,17 +22,17 @@ COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy backend source
-COPY backend /app/backend
+COPY backend ./backend
 
 # Copy built frontend static files
-COPY --from=frontend /app/build /app/build
+COPY --from=frontend /app/build ./build
 
 # Create directory for data
-RUN mkdir -p /app/backend/data
+RUN mkdir -p ./backend/data
 
-# Set environment variables for production
-ENV SUPABASE_URL=${SUPABASE_URL}
-ENV SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+# Test if backend can be imported
+RUN python -c "import backend.main; print('✅ Backend importado com sucesso')"
 
-EXPOSE $PORT
-CMD ["sh", "-c", "cd /app && uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} --log-level info"]
+# Use PORT from environment or default to 8000
+EXPOSE 8000
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "info"]

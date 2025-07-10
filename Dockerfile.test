@@ -1,0 +1,35 @@
+# Dockerfile de teste mínimo
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1
+WORKDIR /app
+
+# Instalar apenas dependências essenciais
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Instalar Node.js
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs
+
+# Build frontend
+COPY package*.json ./
+RUN npm ci --omit=dev
+COPY . .
+RUN npm run build
+
+# Instalar Python deps mínimas
+COPY requirements.minimal.txt ./requirements.txt
+RUN pip install -r requirements.txt
+
+# Copiar backend
+COPY backend ./backend
+
+# Teste simples
+RUN python -c "print('✅ Python funcionando')"
+RUN python -c "from fastapi import FastAPI; print('✅ FastAPI importado')"
+RUN python -c "import backend; print('✅ Backend encontrado')"
+
+EXPOSE 8000
+
+# Comando direto
+CMD ["python", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]

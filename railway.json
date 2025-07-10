@@ -6,10 +6,12 @@
   "deploy": {
     "healthcheckPath": "/api/info",
     "healthcheckTimeout": 300,
-    "restartPolicyType": "on_failure"
+    "restartPolicyType": "on_failure",
+    "startCommand": "uvicorn backend.main:app --host 0.0.0.0 --port 8000 --log-level info"
   },
   "env": {
     "PYTHON_VERSION": "3.12",
-    "NODE_VERSION": "18"
+    "NODE_VERSION": "18",
+    "PORT": "8000"
   }
 }
