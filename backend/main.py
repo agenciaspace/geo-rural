@@ -154,6 +154,15 @@ class BudgetManager:
             try:
                 self.supabase: Client = create_client(self.supabase_url, self.supabase_key)
                 logger.info("Using Supabase for budget storage")
+            except TypeError as e:
+                if "proxy" in str(e):
+                    logger.error(f"Supabase client creation failed due to proxy parameter issue: {e}")
+                    logger.info("This is likely due to a version mismatch in supabase-py")
+                else:
+                    logger.error(f"TypeError in Supabase client creation: {e}")
+                logger.info("Falling back to SQLite storage")
+                self.use_supabase = False
+                self.supabase = None
             except Exception as e:
                 logger.error(f"Failed to initialize Supabase client: {e}")
                 logger.info("Falling back to SQLite storage")
