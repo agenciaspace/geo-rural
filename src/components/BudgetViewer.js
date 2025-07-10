@@ -46,32 +46,25 @@ const BudgetViewer = ({ customLink }) => {
         return;
       }
       
-      console.log('🎯 Tentativa 2: Backend API (apenas em desenvolvimento)');
-      // Só tentar backend se estiver em desenvolvimento local
+      console.log('🎯 Tentativa 2: BYPASS BACKEND - Produção usa apenas Supabase');
+      // Em produção, não tentar backend pois Railway tem problemas de infraestrutura
       if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        console.log('💻 Desenvolvimento: Tentando backend local...');
         try {
           const response = await fetch(`/api/budgets/link/${customLink}`);
-          console.log('📊 Resposta Backend:', { 
-            status: response.status, 
-            statusText: response.statusText,
-            ok: response.ok 
-          });
-          
           if (response.ok) {
             const backendData = await response.json();
-            console.log('📊 Dados do Backend:', backendData);
-            
             if (backendData.success && backendData.budget) {
-              console.log('✅ Sucesso via Backend!');
+              console.log('✅ Sucesso via Backend local!');
               setBudget(backendData.budget);
               return;
             }
           }
         } catch (backendErr) {
-          console.error('❌ Erro no Backend:', backendErr);
+          console.log('❌ Backend local falhou, continuando para Supabase...');
         }
       } else {
-        console.log('🏗️ Produção: Pulando backend, usando apenas Supabase');
+        console.log('🏗️ Produção: Backend bypassed devido a problemas de infraestrutura do Railway');
       }
       
       console.log('🎯 Tentativa 3: Teste direto com ID conhecido');

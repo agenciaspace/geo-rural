@@ -1,19 +1,55 @@
-# Dockerfile ultra-mínimo para debug
+# ---------- Stage 1: Build React frontend ----------
+FROM node:18-alpine AS frontend
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev
+COPY . .
+RUN npm run build
+
+# ---------- Stage 2: Build Python backend ----------
 FROM python:3.12-slim
 
+# Configurações de ambiente
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PORT=8000
+
 WORKDIR /app
 
-# Instalar apenas FastAPI e uvicorn
-RUN pip install fastapi==0.104.1 uvicorn==0.24.0
+# Instalar dependências do sistema
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential gcc gfortran curl && \
+    rm -rf /var/lib/apt/lists/*
 
-# Copiar apenas o backend de teste
-COPY backend/test_main.py ./main.py
+# Copiar e instalar dependências Python
+COPY backend/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Teste
-RUN python -c "from main import app; print('✅ App de teste carregado')"
+# Copiar código do backend
+COPY backend ./backend
 
-EXPOSE 8000
+# Copiar frontend buildado
+COPY --from=frontend /app/build ./build
 
-# Comando ultra-simples
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "debug"]
+# Criar diretórios necessários
+RUN mkdir -p ./backend/data
+
+# Verificar instalação
+RUN python -c "import fastapi; print('✅ FastAPI instalado')" && \
+    python -c "import uvicorn; print('✅ Uvicorn instalado')" && \
+    python -c "import backend.main; print('✅ Backend importado')"
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:${PORT}/api/info || exit 1
+
+# Expor porta
+EXPOSE ${PORT}
+
+# Copiar script de inicialização
+COPY start.sh ./start.sh
+RUN chmod +x ./start.sh
+
+# Comando de inicialização
+CMD ["./start.sh"]
