@@ -21,59 +21,105 @@ const BudgetViewer = ({ customLink }) => {
       setIsLoading(true);
       setError(null);
       
-      console.log('BudgetViewer: Buscando orçamento com link:', customLink);
-      console.log('BudgetViewer: URL atual:', window.location.href);
+      console.log('🔍 BudgetViewer: Iniciando debug completo');
+      console.log('📋 Parâmetros:', { customLink, url: window.location.href });
       
-      // Tentar primeiro via Supabase direto
+      // Debug: verificar se o customLink está correto
+      if (!customLink) {
+        setError('Link inválido - customLink não fornecido');
+        return;
+      }
+      
+      console.log('🎯 Tentativa 1: Supabase direto via db.budgets.getByCustomLink');
       const { data, error } = await db.budgets.getByCustomLink(customLink);
-      
-      console.log('BudgetViewer: Resultado da busca via Supabase:', { data, error });
+      console.log('📊 Resultado Supabase:', { 
+        success: !error && data, 
+        data: data, 
+        error: error,
+        errorCode: error?.code,
+        errorMessage: error?.message 
+      });
       
       if (!error && data) {
-        console.log('BudgetViewer: Orçamento carregado com sucesso via Supabase:', data);
+        console.log('✅ Sucesso via Supabase!');
         setBudget(data);
         return;
       }
       
-      // Se falhou, tentar via backend como fallback
-      console.log('BudgetViewer: Tentando via backend...');
+      console.log('🎯 Tentativa 2: Backend API');
       try {
         const response = await fetch(`/api/budgets/link/${customLink}`);
+        console.log('📊 Resposta Backend:', { 
+          status: response.status, 
+          statusText: response.statusText,
+          ok: response.ok 
+        });
         
         if (response.status === 404) {
+          console.log('❌ Backend: 404 - Orçamento não encontrado');
           setError('Link não encontrado. Verifique se o endereço está correto.');
           return;
         }
 
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
         const backendData = await response.json();
+        console.log('📊 Dados do Backend:', backendData);
         
-        if (backendData.success) {
-          console.log('BudgetViewer: Orçamento carregado via backend:', backendData.budget);
+        if (backendData.success && backendData.budget) {
+          console.log('✅ Sucesso via Backend!');
           setBudget(backendData.budget);
+          return;
         } else {
-          setError('Erro ao carregar orçamento via backend');
+          console.log('❌ Backend: Dados inválidos');
+          throw new Error('Backend retornou dados inválidos');
         }
       } catch (backendErr) {
-        console.error('BudgetViewer: Erro no backend:', backendErr);
-        
-        // Último recurso - mostrar erro original do Supabase
-        if (error) {
-          if (error.code === 'PGRST116') {
-            setError('Link não encontrado. Verifique se o endereço está correto.');
-          } else if (error.code === '42501') {
-            setError('Erro de permissão. Execute o script fix_rls_policies.sql no Supabase.');
-          } else if (error.message?.includes('Invalid API key')) {
-            setError('Erro de configuração do Supabase. Verifique as credenciais.');
-          } else {
-            setError('Erro ao carregar orçamento: ' + (error.message || JSON.stringify(error)));
-          }
-        } else {
-          setError('Erro de conexão. Tente novamente mais tarde.');
-        }
+        console.error('❌ Erro no Backend:', backendErr);
       }
+      
+      console.log('🎯 Tentativa 3: Teste direto com ID conhecido');
+      try {
+        // Testar com o ID conhecido do orçamento
+        const { data: { supabase } } = await import('../config/supabase');
+        const { data: directData, error: directError } = await supabase
+          .from('budgets')
+          .select('*')
+          .eq('id', '502d6aa4-5549-41ab-b6de-d4f4138b506b')
+          .single();
+        
+        console.log('📊 Teste direto por ID:', { directData, directError });
+        
+        if (!directError && directData && directData.custom_link === customLink) {
+          console.log('✅ Encontrado via ID direto!');
+          setBudget(directData);
+          return;
+        }
+      } catch (directErr) {
+        console.error('❌ Erro no teste direto:', directErr);
+      }
+      
+      // Todas as tentativas falharam
+      console.log('❌ Todas as tentativas falharam');
+      console.log('🔍 Erro original do Supabase:', error);
+      
+      if (error) {
+        if (error.code === 'PGRST116') {
+          setError(`Link não encontrado: "${customLink}". Verifique o endereço.`);
+        } else if (error.code === '42501') {
+          setError('Erro de permissão. Execute: ALTER TABLE budgets DISABLE ROW LEVEL SECURITY;');
+        } else {
+          setError(`Erro Supabase [${error.code}]: ${error.message}`);
+        }
+      } else {
+        setError(`Orçamento "${customLink}" não encontrado. Verifique se existe no banco.`);
+      }
+      
     } catch (err) {
-      console.error('BudgetViewer: Erro geral:', err);
-      setError('Erro de conexão. Tente novamente mais tarde: ' + err.message);
+      console.error('💥 Erro geral:', err);
+      setError('Erro fatal: ' + err.message);
     } finally {
       setIsLoading(false);
     }

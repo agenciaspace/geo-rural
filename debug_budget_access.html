@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Completo - Acesso ao Orçamento</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Completo - Acesso ao Orçamento</h1>
+    <p><strong>Testando acesso ao orçamento:</strong> orcamento-1752096006845</p>
+    
+    <div id="results"></div>
+    
+    <script>
+        const supabaseUrl = 'https://lywwxzfnhzbdkxnblvcf.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5d3d4emZuaHpiZGt4bmJsdmNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjYxNTcsImV4cCI6MjA2NDcwMjE1N30.c91JJQ9yFPdjvMcH3VqrJWKu6dUSocrx0Ri9E1V8eDQ';
+        const customLink = 'orcamento-1752096006845';
+        const resultsDiv = document.getElementById('results');
+        
+        function addResult(title, content, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test ${type}`;
+            div.innerHTML = `<h3>${title}</h3><pre>${JSON.stringify(content, null, 2)}</pre>`;
+            resultsDiv.appendChild(div);
+        }
+        
+        async function runTests() {
+            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+            
+            try {
+                // Teste 1: Verificar conexão básica
+                addResult('🔌 Teste 1: Conexão com Supabase', 'Iniciando testes...', 'info');
+                
+                // Teste 2: Listar todos os orçamentos (para ver se a tabela existe)
+                console.log('Teste 2: Listando orçamentos...');
+                try {
+                    const { data: allBudgets, error: allError } = await supabase
+                        .from('budgets')
+                        .select('id, custom_link, status, created_at')
+                        .limit(5);
+                    
+                    if (allError) {
+                        addResult('❌ Teste 2: Listar orçamentos', { error: allError }, 'error');
+                    } else {
+                        addResult('✅ Teste 2: Listar orçamentos', { 
+                            total: allBudgets.length, 
+                            budgets: allBudgets 
+                        }, 'success');
+                    }
+                } catch (err) {
+                    addResult('❌ Teste 2: Erro de conexão', { error: err.message }, 'error');
+                }
+                
+                // Teste 3: Buscar orçamento específico via Supabase
+                console.log('Teste 3: Buscando orçamento específico...');
+                try {
+                    const { data: specificBudget, error: specificError } = await supabase
+                        .from('budgets')
+                        .select('*')
+                        .eq('custom_link', customLink)
+                        .single();
+                    
+                    if (specificError) {
+                        addResult('❌ Teste 3: Buscar orçamento específico (Supabase)', { 
+                            error: specificError,
+                            customLink: customLink 
+                        }, 'error');
+                    } else {
+                        addResult('✅ Teste 3: Orçamento encontrado via Supabase!', specificBudget, 'success');
+                    }
+                } catch (err) {
+                    addResult('❌ Teste 3: Erro ao buscar via Supabase', { error: err.message }, 'error');
+                }
+                
+                // Teste 4: Buscar via API REST direta
+                console.log('Teste 4: Buscando via API REST...');
+                try {
+                    const response = await fetch(`${supabaseUrl}/rest/v1/budgets?custom_link=eq.${customLink}`, {
+                        headers: {
+                            'apikey': supabaseKey,
+                            'Authorization': `Bearer ${supabaseKey}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data && data.length > 0) {
+                            addResult('✅ Teste 4: Orçamento encontrado via API REST!', data[0], 'success');
+                        } else {
+                            addResult('❌ Teste 4: Orçamento não encontrado via API REST', { 
+                                responseStatus: response.status,
+                                data: data 
+                            }, 'error');
+                        }
+                    } else {
+                        addResult('❌ Teste 4: Erro na API REST', { 
+                            status: response.status,
+                            statusText: response.statusText 
+                        }, 'error');
+                    }
+                } catch (err) {
+                    addResult('❌ Teste 4: Erro de conexão API REST', { error: err.message }, 'error');
+                }
+                
+                // Teste 5: Testar função RPC (se existir)
+                console.log('Teste 5: Testando função RPC...');
+                try {
+                    const { data: rpcData, error: rpcError } = await supabase
+                        .rpc('get_budget_by_custom_link', { link_param: customLink });
+                    
+                    if (rpcError) {
+                        addResult('❌ Teste 5: Função RPC (pode não existir)', { error: rpcError }, 'error');
+                    } else {
+                        addResult('✅ Teste 5: Função RPC funcionou!', rpcData, 'success');
+                    }
+                } catch (err) {
+                    addResult('❌ Teste 5: Erro na função RPC', { error: err.message }, 'error');
+                }
+                
+                // Teste 6: Testar backend
+                console.log('Teste 6: Testando backend...');
+                try {
+                    const backendResponse = await fetch(`/api/budgets/link/${customLink}`);
+                    
+                    if (backendResponse.ok) {
+                        const backendData = await backendResponse.json();
+                        addResult('✅ Teste 6: Backend funcionou!', backendData, 'success');
+                    } else {
+                        addResult('❌ Teste 6: Erro no backend', { 
+                            status: backendResponse.status,
+                            statusText: backendResponse.statusText 
+                        }, 'error');
+                    }
+                } catch (err) {
+                    addResult('❌ Teste 6: Erro de conexão backend', { error: err.message }, 'error');
+                }
+                
+                // Teste 7: Verificar estrutura da tabela
+                console.log('Teste 7: Verificando colunas da tabela...');
+                try {
+                    const { data: sampleBudget, error: sampleError } = await supabase
+                        .from('budgets')
+                        .select('*')
+                        .limit(1)
+                        .single();
+                    
+                    if (sampleError) {
+                        addResult('❌ Teste 7: Erro ao verificar estrutura', { error: sampleError }, 'error');
+                    } else {
+                        addResult('✅ Teste 7: Estrutura da tabela', { 
+                            columns: Object.keys(sampleBudget),
+                            hasCustomLink: 'custom_link' in sampleBudget
+                        }, 'info');
+                    }
+                } catch (err) {
+                    addResult('❌ Teste 7: Erro na verificação', { error: err.message }, 'error');
+                }
+                
+            } catch (error) {
+                addResult('❌ Erro geral nos testes', { error: error.message }, 'error');
+            }
+        }
+        
+        // Executar testes quando a página carregar
+        window.onload = runTests;
+    </script>
+</body>
+</html>

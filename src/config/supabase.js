@@ -343,24 +343,22 @@ export const db = {
       }
       
       try {
-        // Primeiro, tentar via API REST direta (bypassa RLS)
-        const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://lywwxzfnhzbdkxnblvcf.supabase.co';
-        const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5d3d4emZuaHpiZGt4bmJsdmNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjYxNTcsImV4cCI6MjA2NDcwMjE1N30.c91JJQ9yFPdjvMcH3VqrJWKu6dUSocrx0Ri9E1V8eDQ';
+        // Usar função SQL pública que bypassa completamente RLS
+        const publicSupabase = createClient(
+          process.env.REACT_APP_SUPABASE_URL || 'https://lywwxzfnhzbdkxnblvcf.supabase.co',
+          process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5d3d4emZuaHpiZGt4bmJsdmNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjYxNTcsImV4cCI6MjA2NDcwMjE1N30.c91JJQ9yFPdjvMcH3VqrJWKu6dUSocrx0Ri9E1V8eDQ'
+        );
         
-        const response = await fetch(`${supabaseUrl}/rest/v1/budgets?custom_link=eq.${customLink}`, {
-          headers: {
-            'apikey': supabaseKey,
-            'Authorization': `Bearer ${supabaseKey}`,
-            'Content-Type': 'application/json'
-          }
+        const { data, error } = await publicSupabase.rpc('get_budget_by_custom_link', {
+          link_param: customLink
         });
         
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        console.log('getByCustomLink RPC result:', { data, error, customLink });
         
-        const data = await response.json();
-        console.log('getByCustomLink API result:', { data, customLink });
+        if (error) {
+          console.error('getByCustomLink RPC error:', error);
+          return { data: null, error };
+        }
         
         if (data && data.length > 0) {
           return { data: data[0], error: null };
@@ -370,21 +368,31 @@ export const db = {
       } catch (err) {
         console.error('getByCustomLink error:', err);
         
-        // Fallback para método original
+        // Fallback para API REST direta
         try {
-          const publicSupabase = createClient(
-            process.env.REACT_APP_SUPABASE_URL || 'https://lywwxzfnhzbdkxnblvcf.supabase.co',
-            process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5d3d4emZuaHpiZGt4bmJsdmNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjYxNTcsImV4cCI6MjA2NDcwMjE1N30.c91JJQ9yFPdjvMcH3VqrJWKu6dUSocrx0Ri9E1V8eDQ'
-          );
+          const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://lywwxzfnhzbdkxnblvcf.supabase.co';
+          const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5d3d4emZuaHpiZGt4bmJsdmNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjYxNTcsImV4cCI6MjA2NDcwMjE1N30.c91JJQ9yFPdjvMcH3VqrJWKu6dUSocrx0Ri9E1V8eDQ';
           
-          const { data, error } = await publicSupabase
-            .from('budgets')
-            .select('*')
-            .eq('custom_link', customLink)
-            .single();
+          const response = await fetch(`${supabaseUrl}/rest/v1/budgets?custom_link=eq.${customLink}`, {
+            headers: {
+              'apikey': supabaseKey,
+              'Authorization': `Bearer ${supabaseKey}`,
+              'Content-Type': 'application/json'
+            }
+          });
           
-          console.log('getByCustomLink fallback result:', { data, error, customLink });
-          return { data, error };
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          console.log('getByCustomLink API fallback result:', { data, customLink });
+          
+          if (data && data.length > 0) {
+            return { data: data[0], error: null };
+          } else {
+            return { data: null, error: { code: 'PGRST116', message: 'Orçamento não encontrado' } };
+          }
         } catch (fallbackErr) {
           console.error('getByCustomLink fallback error:', fallbackErr);
           return { data: null, error: fallbackErr };
@@ -402,23 +410,17 @@ export const db = {
       }
       
       try {
-        // Criar cliente público para operação sem autenticação
+        // Usar função SQL pública que bypassa RLS
         const publicSupabase = createClient(
           process.env.REACT_APP_SUPABASE_URL || 'https://lywwxzfnhzbdkxnblvcf.supabase.co',
           process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5d3d4emZuaHpiZGt4bmJsdmNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjYxNTcsImV4cCI6MjA2NDcwMjE1N30.c91JJQ9yFPdjvMcH3VqrJWKu6dUSocrx0Ri9E1V8eDQ'
         );
         
-        const { data, error } = await publicSupabase
-          .from('budgets')
-          .update({
-            status: 'approved',
-            approval_date: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('custom_link', customLink)
-          .select();
+        const { data, error } = await publicSupabase.rpc('approve_budget_by_custom_link', {
+          link_param: customLink
+        });
         
-        console.log('approveByCustomLink result:', { data, error, customLink });
+        console.log('approveByCustomLink RPC result:', { data, error, customLink });
         return { data, error };
       } catch (err) {
         console.error('approveByCustomLink error:', err);
@@ -436,24 +438,18 @@ export const db = {
       }
       
       try {
-        // Criar cliente público para operação sem autenticação
+        // Usar função SQL pública que bypassa RLS
         const publicSupabase = createClient(
           process.env.REACT_APP_SUPABASE_URL || 'https://lywwxzfnhzbdkxnblvcf.supabase.co',
           process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5d3d4emZuaHpiZGt4bmJsdmNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjYxNTcsImV4cCI6MjA2NDcwMjE1N30.c91JJQ9yFPdjvMcH3VqrJWKu6dUSocrx0Ri9E1V8eDQ'
         );
         
-        const { data, error } = await publicSupabase
-          .from('budgets')
-          .update({
-            status: 'rejected',
-            rejection_date: new Date().toISOString(),
-            rejection_comment: comment,
-            updated_at: new Date().toISOString()
-          })
-          .eq('custom_link', customLink)
-          .select();
+        const { data, error } = await publicSupabase.rpc('reject_budget_by_custom_link', {
+          link_param: customLink,
+          comment_param: comment
+        });
         
-        console.log('rejectByCustomLink result:', { data, error, customLink });
+        console.log('rejectByCustomLink RPC result:', { data, error, customLink });
         return { data, error };
       } catch (err) {
         console.error('rejectByCustomLink error:', err);
