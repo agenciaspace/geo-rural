@@ -9,6 +9,15 @@ const BudgetViewer = ({ customLink }) => {
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectComment, setRejectComment] = useState('');
   const [success, setSuccess] = useState(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (customLink) {
@@ -271,13 +280,13 @@ const BudgetViewer = ({ customLink }) => {
     <div style={{ 
       minHeight: '100vh', 
       background: '#f5f5f5',
-      padding: '2rem 0'
+      padding: isMobile ? '0' : '2rem 0'
     }}>
       <div style={{ 
         maxWidth: '800px', 
-        margin: '0 auto', 
+        margin: isMobile ? '0' : '0 auto', 
         background: 'white', 
-        borderRadius: '8px',
+        borderRadius: isMobile ? '0' : '8px',
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
         overflow: 'hidden'
       }}>
@@ -295,7 +304,7 @@ const BudgetViewer = ({ customLink }) => {
           </p>
         </div>
 
-        <div style={{ padding: '2rem' }}>
+        <div style={{ padding: isMobile ? '1rem' : '2rem' }}>
           
           {/* Messages */}
           {error && (
@@ -371,10 +380,10 @@ const BudgetViewer = ({ customLink }) => {
             </h3>
             <div style={{ 
               display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-              gap: '1rem',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(250px, 1fr))', 
+              gap: isMobile ? '0.5rem' : '1rem',
               background: '#fafafa',
-              padding: '1rem',
+              padding: isMobile ? '0.75rem' : '1rem',
               borderRadius: '4px',
               border: '1px solid #e5e5e5'
             }}>
@@ -406,10 +415,10 @@ const BudgetViewer = ({ customLink }) => {
             </h3>
             <div style={{ 
               display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-              gap: '1rem',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(250px, 1fr))', 
+              gap: isMobile ? '0.5rem' : '1rem',
               background: '#fafafa',
-              padding: '1rem',
+              padding: isMobile ? '0.75rem' : '1rem',
               borderRadius: '4px',
               border: '1px solid #e5e5e5'
             }}>
@@ -483,42 +492,73 @@ const BudgetViewer = ({ customLink }) => {
               }}>
                 Detalhamento de Custos
               </h3>
-              <table style={{ 
-                width: '100%', 
-                borderCollapse: 'collapse',
-                background: 'white',
-                border: '1px solid #e5e5e5'
-              }}>
-                <thead>
-                  <tr style={{ background: '#f8f8f8', borderBottom: '2px solid #e5e5e5' }}>
-                    <th style={{ padding: '1rem', textAlign: 'left', color: '#333' }}>Item</th>
-                    <th style={{ padding: '1rem', textAlign: 'right', color: '#333' }}>Valor</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {budget.budget_result.breakdown.map((item, index) => (
-                    <tr key={index} style={{ 
-                      borderBottom: '1px solid #e5e5e5'
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ 
+                  width: '100%', 
+                  borderCollapse: 'collapse',
+                  background: 'white',
+                  border: '1px solid #e5e5e5',
+                  minWidth: isMobile ? '300px' : 'auto'
+                }}>
+                  <thead>
+                    <tr style={{ background: '#f8f8f8', borderBottom: '2px solid #e5e5e5' }}>
+                      <th style={{ 
+                        padding: isMobile ? '0.75rem' : '1rem', 
+                        textAlign: 'left', 
+                        color: '#333',
+                        fontSize: isMobile ? '0.9rem' : '1rem'
+                      }}>Item</th>
+                      <th style={{ 
+                        padding: isMobile ? '0.75rem' : '1rem', 
+                        textAlign: 'right', 
+                        color: '#333',
+                        fontSize: isMobile ? '0.9rem' : '1rem'
+                      }}>Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {budget.budget_result.breakdown.map((item, index) => (
+                      <tr key={index} style={{ 
+                        borderBottom: '1px solid #e5e5e5'
+                      }}>
+                        <td style={{ 
+                          padding: isMobile ? '0.75rem' : '1rem', 
+                          color: '#555',
+                          fontSize: isMobile ? '0.9rem' : '1rem'
+                        }}>{item.item}</td>
+                        <td style={{ 
+                          padding: isMobile ? '0.75rem' : '1rem', 
+                          textAlign: 'right', 
+                          color: '#555',
+                          fontSize: isMobile ? '0.9rem' : '1rem',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {item.value < 0 ? '-' : ''}
+                          {formatCurrency(Math.abs(item.value))}
+                        </td>
+                      </tr>
+                    ))}
+                    <tr style={{ 
+                      borderTop: '2px solid #333',
+                      fontWeight: 'bold',
+                      fontSize: isMobile ? '1rem' : '1.1rem'
                     }}>
-                      <td style={{ padding: '1rem', color: '#555' }}>{item.item}</td>
-                      <td style={{ padding: '1rem', textAlign: 'right', color: '#555' }}>
-                        {item.value < 0 ? '-' : ''}
-                        {formatCurrency(Math.abs(item.value))}
+                      <td style={{ 
+                        padding: isMobile ? '0.75rem' : '1rem', 
+                        color: '#333'
+                      }}>TOTAL</td>
+                      <td style={{ 
+                        padding: isMobile ? '0.75rem' : '1rem', 
+                        textAlign: 'right', 
+                        color: '#333',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {formatCurrency(budget.budget_result.total_price || budget.budget_result.total_cost)}
                       </td>
                     </tr>
-                  ))}
-                  <tr style={{ 
-                    borderTop: '2px solid #333',
-                    fontWeight: 'bold',
-                    fontSize: '1.1rem'
-                  }}>
-                    <td style={{ padding: '1rem', color: '#333' }}>TOTAL</td>
-                    <td style={{ padding: '1rem', textAlign: 'right', color: '#333' }}>
-                      {formatCurrency(budget.budget_result.total_price || budget.budget_result.total_cost)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
+              </div>
             </section>
           )}
 
@@ -639,7 +679,14 @@ const BudgetViewer = ({ customLink }) => {
                 </h3>
                 
                 {!showRejectForm ? (
-                  <div style={{ textAlign: 'center' }}>
+                  <div style={{ 
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: isMobile ? 'column' : 'row',
+                    gap: '1rem',
+                    justifyContent: 'center',
+                    alignItems: 'center'
+                  }}>
                     <button
                       onClick={handleApprove}
                       disabled={isSubmitting}
@@ -647,14 +694,17 @@ const BudgetViewer = ({ customLink }) => {
                         background: '#28a745',
                         color: 'white',
                         border: 'none',
-                        padding: '1rem 2rem',
+                        padding: isMobile ? '1rem' : '1rem 2rem',
                         borderRadius: '4px',
-                        fontSize: '1.1rem',
+                        fontSize: isMobile ? '1rem' : '1.1rem',
                         fontWeight: '600',
                         cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                        marginRight: '1rem',
+                        width: isMobile ? '100%' : 'auto',
+                        minWidth: isMobile ? '100%' : '200px',
                         opacity: isSubmitting ? 0.6 : 1,
-                        transition: 'all 0.2s'
+                        transition: 'all 0.2s',
+                        WebkitTapHighlightColor: 'transparent',
+                        touchAction: 'manipulation'
                       }}
                     >
                       {isSubmitting ? 'Processando...' : 'Aprovar Orçamento'}
@@ -666,13 +716,17 @@ const BudgetViewer = ({ customLink }) => {
                         background: '#dc3545',
                         color: 'white',
                         border: 'none',
-                        padding: '1rem 2rem',
+                        padding: isMobile ? '1rem' : '1rem 2rem',
                         borderRadius: '4px',
-                        fontSize: '1.1rem',
+                        fontSize: isMobile ? '1rem' : '1.1rem',
                         fontWeight: '600',
                         cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                        width: isMobile ? '100%' : 'auto',
+                        minWidth: isMobile ? '100%' : '200px',
                         opacity: isSubmitting ? 0.6 : 1,
-                        transition: 'all 0.2s'
+                        transition: 'all 0.2s',
+                        WebkitTapHighlightColor: 'transparent',
+                        touchAction: 'manipulation'
                       }}
                     >
                       Rejeitar Orçamento
@@ -693,12 +747,20 @@ const BudgetViewer = ({ customLink }) => {
                         padding: '1rem',
                         borderRadius: '4px',
                         border: '1px solid #d0d0d0',
-                        fontSize: '1rem',
+                        fontSize: '16px', // Prevents zoom on iOS
                         marginBottom: '1rem',
-                        resize: 'vertical'
+                        resize: 'vertical',
+                        WebkitAppearance: 'none'
                       }}
                     />
-                    <div style={{ textAlign: 'center' }}>
+                    <div style={{ 
+                      textAlign: 'center',
+                      display: 'flex',
+                      flexDirection: isMobile ? 'column' : 'row',
+                      gap: '1rem',
+                      justifyContent: 'center',
+                      alignItems: 'center'
+                    }}>
                       <button
                         onClick={handleReject}
                         disabled={isSubmitting || !rejectComment.trim()}
@@ -706,13 +768,17 @@ const BudgetViewer = ({ customLink }) => {
                           background: '#dc3545',
                           color: 'white',
                           border: 'none',
-                          padding: '0.8rem 1.5rem',
+                          padding: isMobile ? '1rem' : '0.8rem 1.5rem',
                           borderRadius: '4px',
                           fontSize: '1rem',
                           fontWeight: '600',
                           cursor: (isSubmitting || !rejectComment.trim()) ? 'not-allowed' : 'pointer',
-                          marginRight: '1rem',
-                          opacity: (isSubmitting || !rejectComment.trim()) ? 0.6 : 1
+                          width: isMobile ? '100%' : 'auto',
+                          minWidth: isMobile ? '100%' : '160px',
+                          opacity: (isSubmitting || !rejectComment.trim()) ? 0.6 : 1,
+                          transition: 'all 0.2s',
+                          WebkitTapHighlightColor: 'transparent',
+                          touchAction: 'manipulation'
                         }}
                       >
                         {isSubmitting ? 'Enviando...' : 'Enviar Rejeição'}
@@ -728,12 +794,17 @@ const BudgetViewer = ({ customLink }) => {
                           background: 'transparent',
                           color: '#666',
                           border: '1px solid #d0d0d0',
-                          padding: '0.8rem 1.5rem',
+                          padding: isMobile ? '1rem' : '0.8rem 1.5rem',
                           borderRadius: '4px',
                           fontSize: '1rem',
                           fontWeight: '600',
                           cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                          opacity: isSubmitting ? 0.6 : 1
+                          width: isMobile ? '100%' : 'auto',
+                          minWidth: isMobile ? '100%' : '160px',
+                          opacity: isSubmitting ? 0.6 : 1,
+                          transition: 'all 0.2s',
+                          WebkitTapHighlightColor: 'transparent',
+                          touchAction: 'manipulation'
                         }}
                       >
                         Cancelar
@@ -746,19 +817,31 @@ const BudgetViewer = ({ customLink }) => {
           )}
 
           {/* Ações Gerais */}
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div style={{ 
+            textAlign: 'center', 
+            marginBottom: '2rem',
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: '1rem',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}>
             <button
               onClick={generatePDF}
               style={{
                 background: '#666',
                 color: 'white',
                 border: 'none',
-                padding: '0.8rem 1.5rem',
+                padding: isMobile ? '1rem' : '0.8rem 1.5rem',
                 borderRadius: '4px',
                 fontSize: '1rem',
                 fontWeight: '600',
                 cursor: 'pointer',
-                marginRight: '1rem'
+                width: isMobile ? '100%' : 'auto',
+                minWidth: isMobile ? '100%' : '200px',
+                transition: 'all 0.2s',
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation'
               }}
             >
               Baixar Proposta em PDF
@@ -769,12 +852,16 @@ const BudgetViewer = ({ customLink }) => {
                 background: 'transparent',
                 color: '#666',
                 border: '1px solid #d0d0d0',
-                padding: '0.8rem 1.5rem',
+                padding: isMobile ? '1rem' : '0.8rem 1.5rem',
                 borderRadius: '4px',
                 fontSize: '1rem',
                 fontWeight: '600',
                 cursor: 'pointer',
-                marginRight: '1rem'
+                width: isMobile ? '100%' : 'auto',
+                minWidth: isMobile ? '100%' : '200px',
+                transition: 'all 0.2s',
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation'
               }}
             >
               Conhecer a Plataforma
@@ -785,11 +872,16 @@ const BudgetViewer = ({ customLink }) => {
                 background: '#666',
                 color: 'white',
                 border: 'none',
-                padding: '0.8rem 1.5rem',
+                padding: isMobile ? '1rem' : '0.8rem 1.5rem',
                 borderRadius: '4px',
                 fontSize: '1rem',
                 fontWeight: '600',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                width: isMobile ? '100%' : 'auto',
+                minWidth: isMobile ? '100%' : '200px',
+                transition: 'all 0.2s',
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation'
               }}
             >
               Central de Orçamentos

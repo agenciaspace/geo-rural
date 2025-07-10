@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import responsive utilities */
+@import './styles/responsive.css';
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -321,20 +324,96 @@ body {
   margin: 1rem 0;
 }
 
+/* Enhanced Mobile Responsive Styles */
 @media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+  
   .form-row {
     grid-template-columns: 1fr;
   }
   
   .nav-tabs {
     flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .nav-tab {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    border-bottom: none;
+    border-left: 3px solid transparent;
+  }
+  
+  .nav-tab.active {
+    border-left-color: #2c5aa0;
+    border-bottom-color: transparent;
+  }
+  
+  .header {
+    padding: 1.5rem 0;
   }
   
   .header h1 {
-    font-size: 2rem;
+    font-size: 1.75rem;
+  }
+  
+  .header p {
+    font-size: 1rem;
   }
   
   .price-display {
-    font-size: 2rem;
+    font-size: 1.75rem;
+  }
+  
+  .card {
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .btn {
+    width: 100%;
+    padding: 0.875rem 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .btn + .btn {
+    margin-left: 0;
+  }
+  
+  .upload-area {
+    padding: 2rem 1rem;
+  }
+  
+  .breakdown-table {
+    font-size: 0.875rem;
+  }
+  
+  .breakdown-table th,
+  .breakdown-table td {
+    padding: 0.5rem;
+  }
+  
+  .technical-report {
+    padding: 1rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 480px) {
+  .header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .price-display {
+    font-size: 1.5rem;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
   }
 }
