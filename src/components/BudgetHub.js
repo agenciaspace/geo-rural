@@ -434,6 +434,33 @@ const BudgetHub = () => {
       
       console.log('BudgetHub: Orçamento salvo com sucesso:', savedBudget);
       
+      // Se tem client_id, atualizar o total_spent do cliente
+      if (clientId && savedBudget && savedBudget[0]) {
+        console.log('BudgetHub: Atualizando total gasto do cliente...');
+        
+        // Buscar o cliente atual para obter o total_spent atual
+        const { data: currentClient, error: getClientError } = await db.clients.getById(clientId);
+        
+        if (!getClientError && currentClient) {
+          const currentTotal = parseFloat(currentClient.total_spent || 0);
+          const budgetTotal = parseFloat(budgetData.total || 0);
+          const newTotal = currentTotal + budgetTotal;
+          
+          // Atualizar o cliente com o novo total e incrementar total_budgets
+          const { error: updateError } = await db.clients.update(clientId, {
+            total_spent: newTotal,
+            total_budgets: (currentClient.total_budgets || 0) + 1,
+            last_budget_date: new Date().toISOString()
+          });
+          
+          if (updateError) {
+            console.error('BudgetHub: Erro ao atualizar totais do cliente:', updateError);
+          } else {
+            console.log('BudgetHub: Totais do cliente atualizados com sucesso');
+          }
+        }
+      }
+      
       const linkMessage = budgetData.custom_link ? 
         `Link automático: ${budgetData.custom_link}` : 
         `ID: ${savedBudget[0]?.id || 'novo'}`;
