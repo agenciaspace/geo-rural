@@ -368,6 +368,30 @@ const BudgetHub = () => {
         throw new Error(budgetResult.message || 'Erro ao calcular orçamento');
       }
 
+      // Se não tem client_id (cliente novo), criar cliente primeiro
+      let clientId = formData.client_id;
+      
+      if (!clientId && !useExistingClient) {
+        console.log('BudgetHub: Criando novo cliente automaticamente...');
+        
+        const newClientData = {
+          name: formData.client_name,
+          email: formData.client_email,
+          phone: formData.client_phone,
+          client_type: formData.client_type
+        };
+        
+        const { data: createdClient, error: clientError } = await db.clients.create(newClientData);
+        
+        if (clientError) {
+          console.error('BudgetHub: Erro ao criar cliente:', clientError);
+          // Continua sem client_id se falhar
+        } else if (createdClient && createdClient.length > 0) {
+          clientId = createdClient[0].id;
+          console.log('BudgetHub: Cliente criado com sucesso, ID:', clientId);
+        }
+      }
+
       // Depois salva o orçamento no Supabase
       const budgetData = {
         client_name: formData.client_name,
@@ -394,9 +418,9 @@ const BudgetHub = () => {
         status: 'active'
       };
       
-      // Se tem client_id, incluir no orçamento
-      if (formData.client_id) {
-        budgetData.client_id = formData.client_id;
+      // Se tem client_id (existente ou recém criado), incluir no orçamento
+      if (clientId) {
+        budgetData.client_id = clientId;
       }
       
       console.log('BudgetHub: Salvando orçamento no Supabase:', budgetData);
