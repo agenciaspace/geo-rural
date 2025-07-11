@@ -5,7 +5,6 @@ import LoginPage from './components/LoginPage';
 import BudgetViewer from './components/BudgetViewer';
 import DashboardLayout from './components/DashboardLayout';
 import OnboardingFlow from './components/OnboardingFlow';
-import AuthDebug from './components/AuthDebug';
 import { AuthProvider } from './hooks/useAuth';
 import './styles/dashboard.css';
 import EmailConfirmationPage from './components/EmailConfirmationPage';
@@ -128,8 +127,6 @@ const MainApp = () => {
       {currentView === 'app' && (
         <DashboardLayout onLogout={handleLogout} />
       )}
-      
-      <AuthDebug />
     </AuthProvider>
   );
 };

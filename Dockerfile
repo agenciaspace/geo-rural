@@ -1,5 +1,12 @@
 # ---------- Stage 1: Build React frontend ----------
 FROM node:18-alpine AS frontend
+
+# Adicionar variáveis de ambiente do React para o build
+ARG REACT_APP_SUPABASE_URL
+ARG REACT_APP_SUPABASE_ANON_KEY
+ENV REACT_APP_SUPABASE_URL=$REACT_APP_SUPABASE_URL
+ENV REACT_APP_SUPABASE_ANON_KEY=$REACT_APP_SUPABASE_ANON_KEY
+
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev

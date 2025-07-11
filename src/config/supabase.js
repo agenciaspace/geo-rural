@@ -4,11 +4,6 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
 
-// Debug logs temporários - REMOVER APÓS CONFIRMAR QUE FUNCIONA
-console.log('🔥 SUPABASE CONFIG CHECK:');
-console.log('🔥 URL:', supabaseUrl ? '✅ Configurado' : '❌ Não configurado');
-console.log('🔥 KEY:', supabaseAnonKey ? '✅ Configurado' : '❌ Não configurado');
-console.log('🔥 Cliente Supabase será:', supabaseUrl && supabaseAnonKey ? 'CRIADO' : 'NULL (modo demo)');
 
 // Cria cliente do Supabase apenas se as variáveis estiverem configuradas
 export const supabase = supabaseUrl && supabaseAnonKey 
@@ -37,15 +32,9 @@ export const auth = {
   // Login com email e senha
   signIn: async (email, password) => {
     if (!supabase) {
-      // Modo demo/desenvolvimento - simular login
-      const mockUser = {
-        id: 'demo-user',
-        email: email,
-        user_metadata: { name: 'Usuário Demo' }
-      };
       return { 
-        data: { user: mockUser, session: { user: mockUser } }, 
-        error: null 
+        data: null, 
+        error: { message: 'Supabase não configurado. Verifique as variáveis de ambiente.' } 
       };
     }
     
@@ -71,15 +60,9 @@ export const auth = {
   // Cadastro de novo usuário
   signUp: async (email, password, metadata = {}) => {
     if (!supabase) {
-      // Modo demo/desenvolvimento - simular cadastro
-      const mockUser = {
-        id: 'demo-user',
-        email: email,
-        user_metadata: { name: metadata.name || 'Usuário Demo' }
-      };
       return { 
-        data: { user: mockUser, session: { user: mockUser } }, 
-        error: null 
+        data: null, 
+        error: { message: 'Supabase não configurado. Verifique as variáveis de ambiente.' } 
       };
     }
     
@@ -92,8 +75,6 @@ export const auth = {
       }
     });
 
-    // Log para debug
-    console.log('🔥 Supabase signUp response:', { data, error });
     
     // Retornar resultado bruto do Supabase
     return { data, error };
@@ -114,7 +95,7 @@ export const auth = {
     if (!supabase) {
       return Promise.resolve({ 
         data: { user: null }, 
-        error: { message: 'Supabase não configurado' } 
+        error: { message: 'Supabase não configurado. Verifique as variáveis de ambiente.' } 
       });
     }
     
@@ -124,9 +105,9 @@ export const auth = {
   // Escutar mudanças de autenticação
   onAuthStateChange: (callback) => {
     if (!supabase) {
-      // Retornar um subscription mock
       return {
-        data: { subscription: { unsubscribe: () => {} } }
+        data: { subscription: { unsubscribe: () => {} } },
+        error: { message: 'Supabase não configurado. Verifique as variáveis de ambiente.' }
       };
     }
     
@@ -632,13 +613,19 @@ export const db = {
       }
       
       const { data: { user } } = await supabase.auth.getUser();
+      console.log('🔍 db.clients.create - user:', user?.id);
+      console.log('🔍 db.clients.create - clientData:', clientData);
+      
       const { data, error } = await supabase
         .from('clients')
         .insert([{
           ...clientData,
-          user_id: user?.id
+          user_id: user?.id,
+          is_active: true // Garantir que o cliente seja criado como ativo
         }])
         .select();
+        
+      console.log('🔍 db.clients.create - resultado:', { data, error });
       return { data, error };
     },
 
@@ -651,6 +638,8 @@ export const db = {
       }
       
       const { data: { user } } = await supabase.auth.getUser();
+      console.log('🔍 db.clients.list - user:', user?.id);
+      
       if (!user) {
         return { 
           data: null, 
@@ -664,6 +653,8 @@ export const db = {
         .eq('user_id', user.id)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
+        
+      console.log('🔍 db.clients.list - resultado:', { count: data?.length, error });
       return { data, error };
     },
 
