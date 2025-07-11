@@ -8,6 +8,7 @@ import ClientManager from './ClientManager';
 import GnssUploader from './GnssUploader';
 import UserProfile from './UserProfile';
 import EmailConfirmationModal from './EmailConfirmationModal';
+import FormLinksManager from './FormLinksManager';
 import { useAuth } from '../hooks/useAuth';
 
 const DashboardLayout = ({ onLogout }) => {
@@ -286,6 +287,7 @@ const DashboardLayout = ({ onLogout }) => {
             <Route path="/clients" element={<ClientManager />} />
             <Route path="/gnss" element={<GnssUploader />} />
             <Route path="/profile" element={<UserProfile />} />
+            <Route path="/form-links" element={<FormLinksManager />} />
           </Routes>
         </div>
       </div>

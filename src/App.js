@@ -8,6 +8,7 @@ import OnboardingFlow from './components/OnboardingFlow';
 import { AuthProvider } from './hooks/useAuth';
 import './styles/dashboard.css';
 import EmailConfirmationPage from './components/EmailConfirmationPage';
+import PublicBudgetRequest from './components/PublicBudgetRequest';
 
 // Componente para visualização pública de orçamento
 const PublicBudgetViewer = () => {
@@ -137,6 +138,9 @@ function App() {
       <Routes>
         {/* Rota pública para visualização de orçamentos */}
         <Route path="/budget/:customLink" element={<PublicBudgetViewer />} />
+        
+        {/* Rota pública para solicitação de orçamentos */}
+        <Route path="/budgets/:slug" element={<PublicBudgetRequest />} />
         
         {/* Rotas da aplicação principal */}
         <Route path="/app/*" element={<MainApp />} />

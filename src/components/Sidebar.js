@@ -45,6 +45,13 @@ const Sidebar = ({ onLogout, isOpen, onToggle }) => {
       label: 'Análise GNSS',
       path: '/app/gnss',
       description: 'Processamento de dados'
+    },
+    {
+      id: 'form-links',
+      icon: '🔗',
+      label: 'Links de Formulário',
+      path: '/app/form-links',
+      description: 'Gerenciar links públicos'
     }
   ];
 
