@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db } from '../config/supabase';
+import { db, supabase } from '../config/supabase';
 import { useAuth } from '../hooks/useAuth';
+import BudgetItemsManager from './BudgetItemsManager';
 
 const BudgetHub = () => {
   const { isAuthenticated } = useAuth();
@@ -17,6 +18,8 @@ const BudgetHub = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingLink, setEditingLink] = useState(null);
   const [newLinkValue, setNewLinkValue] = useState('');
+  const [showItemsManager, setShowItemsManager] = useState(false);
+  const [currentBudgetId, setCurrentBudgetId] = useState(null);
   
   // Cliente management states
   const [clients, setClients] = useState([]);
@@ -150,7 +153,26 @@ const BudgetHub = () => {
         showError('Erro ao carregar orçamentos: ' + dbError.message);
       } else {
         console.log('BudgetHub: Orçamentos carregados:', data || []);
-        setBudgets(data || []);
+        
+        // Carregar contagem de itens para cada orçamento
+        if (data && data.length > 0) {
+          const budgetsWithItemCount = await Promise.all(
+            data.map(async (budget) => {
+              const { count } = await supabase
+                .from('budget_items')
+                .select('*', { count: 'exact', head: true })
+                .eq('budget_id', budget.id);
+              
+              return {
+                ...budget,
+                items_count: count || 0
+              };
+            })
+          );
+          setBudgets(budgetsWithItemCount);
+        } else {
+          setBudgets(data || []);
+        }
       }
     } catch (err) {
       console.error('BudgetHub: Erro de conexão:', err);
@@ -370,6 +392,7 @@ const BudgetHub = () => {
 
       // Se não tem client_id (cliente novo), criar cliente primeiro
       let clientId = formData.client_id;
+      let isNewClient = false;
       
       if (!clientId && !useExistingClient) {
         console.log('BudgetHub: Criando novo cliente automaticamente...');
@@ -378,7 +401,9 @@ const BudgetHub = () => {
           name: formData.client_name,
           email: formData.client_email,
           phone: formData.client_phone,
-          client_type: formData.client_type
+          client_type: formData.client_type,
+          total_budgets: 0, // Inicializar com 0 para evitar duplicação
+          total_spent: 0
         };
         
         const { data: createdClient, error: clientError } = await db.clients.create(newClientData);
@@ -388,6 +413,7 @@ const BudgetHub = () => {
           // Continua sem client_id se falhar
         } else if (createdClient && createdClient.length > 0) {
           clientId = createdClient[0].id;
+          isNewClient = true;
           console.log('BudgetHub: Cliente criado com sucesso, ID:', clientId);
         }
       }
@@ -438,25 +464,43 @@ const BudgetHub = () => {
       if (clientId && savedBudget && savedBudget[0]) {
         console.log('BudgetHub: Atualizando total gasto do cliente...');
         
-        // Buscar o cliente atual para obter o total_spent atual
-        const { data: currentClient, error: getClientError } = await db.clients.getById(clientId);
-        
-        if (!getClientError && currentClient) {
-          const currentTotal = parseFloat(currentClient.total_spent || 0);
+        // Para clientes novos, não precisamos buscar dados atuais
+        if (isNewClient) {
           const budgetTotal = parseFloat(budgetData.total || 0);
-          const newTotal = currentTotal + budgetTotal;
           
-          // Atualizar o cliente com o novo total e incrementar total_budgets
+          // Para cliente novo, total_budgets = 1 e total_spent = valor do primeiro orçamento
           const { error: updateError } = await db.clients.update(clientId, {
-            total_spent: newTotal,
-            total_budgets: (currentClient.total_budgets || 0) + 1,
+            total_spent: budgetTotal,
+            total_budgets: 1,
             last_budget_date: new Date().toISOString()
           });
           
           if (updateError) {
-            console.error('BudgetHub: Erro ao atualizar totais do cliente:', updateError);
+            console.error('BudgetHub: Erro ao atualizar totais do cliente novo:', updateError);
           } else {
-            console.log('BudgetHub: Totais do cliente atualizados com sucesso');
+            console.log('BudgetHub: Totais do cliente novo atualizados com sucesso');
+          }
+        } else {
+          // Para cliente existente, buscar dados atuais
+          const { data: currentClient, error: getClientError } = await db.clients.getById(clientId);
+          
+          if (!getClientError && currentClient) {
+            const currentTotal = parseFloat(currentClient.total_spent || 0);
+            const budgetTotal = parseFloat(budgetData.total || 0);
+            const newTotal = currentTotal + budgetTotal;
+            
+            // Atualizar o cliente com o novo total e incrementar total_budgets
+            const { error: updateError } = await db.clients.update(clientId, {
+              total_spent: newTotal,
+              total_budgets: (currentClient.total_budgets || 0) + 1,
+              last_budget_date: new Date().toISOString()
+            });
+            
+            if (updateError) {
+              console.error('BudgetHub: Erro ao atualizar totais do cliente:', updateError);
+            } else {
+              console.log('BudgetHub: Totais do cliente atualizados com sucesso');
+            }
           }
         }
       }
@@ -465,9 +509,19 @@ const BudgetHub = () => {
         `Link automático: ${budgetData.custom_link}` : 
         `ID: ${savedBudget[0]?.id || 'novo'}`;
       showSuccess(`✅ Orçamento criado com sucesso! ${linkMessage}`);
-      resetForm();
-      setActiveView('list');
-      loadBudgets();
+      
+      // Abrir o gerenciador de itens para o orçamento recém-criado
+      if (savedBudget && savedBudget[0] && savedBudget[0].id) {
+        setCurrentBudgetId(savedBudget[0].id);
+        setShowItemsManager(true);
+        resetForm();
+        setActiveView('list');
+        loadBudgets();
+      } else {
+        resetForm();
+        setActiveView('list');
+        loadBudgets();
+      }
     } catch (err) {
       showError(err.message);
     } finally {
@@ -811,13 +865,19 @@ const BudgetHub = () => {
                         🏞️ {budget.budget_request.property_name} • {budget.budget_request.city}-{budget.budget_request.state}
                       </div>
                       <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#28a745' }}>
-                        💰 {formatCurrency(budget.budget_result.total_price || budget.budget_result.total_cost)}
+                        💰 {formatCurrency(budget.total_price || budget.budget_result?.total_price || budget.budget_result?.total_cost || budget.total)}
                       </div>
                       <div style={{ fontSize: '0.8rem', color: '#999', marginTop: '0.5rem' }}>
                         📅 {formatDate(budget.created_at)}
                       </div>
-                      <div style={{ fontSize: '0.8rem', color: '#007bff', marginTop: '0.5rem' }}>
-                        {editingLink === budget.id ? (
+                      <div style={{ 
+                        display: 'flex', 
+                        gap: '15px', 
+                        alignItems: 'center',
+                        marginTop: '0.5rem'
+                      }}>
+                        <div style={{ fontSize: '0.8rem', color: '#007bff' }}>
+                          {editingLink === budget.id ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
                             <span>🔗 Link:</span>
                             <input
@@ -874,6 +934,7 @@ const BudgetHub = () => {
                         ) : (
                           <span>🔗 Link: {budget.custom_link || 'Não disponível'}</span>
                         )}
+                        </div>
                       </div>
                     </div>
                     
@@ -902,6 +963,45 @@ const BudgetHub = () => {
                         }}
                       >
                         📄 Ver Detalhes
+                      </button>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCurrentBudgetId(budget.id);
+                          setShowItemsManager(true);
+                        }}
+                        style={{
+                          background: '#1a5f3f',
+                          color: 'white',
+                          border: 'none',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '0.8rem',
+                          transition: 'all 0.2s ease',
+                          fontWeight: 'bold',
+                          minWidth: '100px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '5px'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = '#2a7f5f';
+                          e.target.style.transform = 'scale(1.05)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = '#1a5f3f';
+                          e.target.style.transform = 'scale(1)';
+                        }}
+                      >
+                        📋 Itens {budget.items_count > 0 && <span style={{
+                          background: 'rgba(255,255,255,0.3)',
+                          padding: '2px 6px',
+                          borderRadius: '10px',
+                          fontSize: '11px'
+                        }}>({budget.items_count})</span>}
                       </button>
                       
                       <button
@@ -1506,6 +1606,88 @@ const BudgetHub = () => {
                 ❌ Cancelar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para gerenciar itens do orçamento */}
+      {showItemsManager && currentBudgetId && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '8px',
+            padding: '2rem',
+            maxWidth: '900px',
+            width: '90%',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            position: 'relative'
+          }}>
+            <button
+              onClick={() => {
+                setShowItemsManager(false);
+                setCurrentBudgetId(null);
+                loadBudgets(); // Recarregar orçamentos para atualizar totais
+              }}
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                background: 'transparent',
+                border: 'none',
+                fontSize: '1.5rem',
+                cursor: 'pointer',
+                color: '#666'
+              }}
+            >
+              ✕
+            </button>
+            
+            <h2 style={{ color: '#1a5f3f', marginBottom: '1rem' }}>
+              Detalhamento do Orçamento
+            </h2>
+            <p style={{ 
+              color: '#666', 
+              marginBottom: '20px',
+              fontSize: '14px'
+            }}>
+              Adicione itens detalhados como insumos, deslocamento, hospedagem e outros custos para criar um orçamento mais completo.
+            </p>
+            
+            {budgets.find(b => b.id === currentBudgetId) && (
+              <div style={{
+                background: '#f9f9f9',
+                padding: '15px',
+                borderRadius: '6px',
+                marginBottom: '20px'
+              }}>
+                <h4 style={{ margin: '0 0 10px 0' }}>
+                  Cliente: {budgets.find(b => b.id === currentBudgetId).client_name}
+                </h4>
+                <p style={{ margin: 0, color: '#666' }}>
+                  Propriedade: {budgets.find(b => b.id === currentBudgetId).property_name || 'Não informada'}
+                </p>
+              </div>
+            )}
+            
+            <BudgetItemsManager 
+              budgetId={currentBudgetId}
+              onTotalChange={(total) => {
+                // Atualizar o total no estado local se necessário
+                console.log('Novo total:', total);
+              }}
+            />
           </div>
         </div>
       )}

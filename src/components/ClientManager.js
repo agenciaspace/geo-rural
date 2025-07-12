@@ -405,7 +405,7 @@ const ClientManager = () => {
                       </div>
                       {client.total_budgets > 0 && (
                         <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.5rem' }}>
-                          💰 {client.total_budgets} orçamento(s) • Total: R$ {client.total_spent?.toFixed(2) || '0.00'}
+                          💰 {client.total_budgets} orçamento(s) • Total: R$ {(client.total_spent || 0).toFixed(2)}
                         </div>
                       )}
                     </div>

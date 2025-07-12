@@ -51,7 +51,8 @@
       "Bash(pkill:*)",
       "Bash(true)",
       "Bash(npm test:*)",
-      "Bash(kill:*)"
+      "Bash(kill:*)",
+      "Bash(psql:*)"
     ],
     "deny": []
   }
